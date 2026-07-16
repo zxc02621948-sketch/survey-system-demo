@@ -110,6 +110,35 @@
   .modal .mb b{color:var(--ink)}
   pre{background:#141b17;color:#d3e4da;padding:16px;overflow:auto;font-size:12.5px;line-height:1.55;max-height:340px;margin:12px 0 0}
   .hidden{display:none}
+  /* ===== 問卷管理 ===== */
+  .cards{display:flex;gap:14px;flex-wrap:wrap}
+  .card{flex:1;min-width:220px;border:1px solid var(--line);background:#fbfbf9;padding:18px 18px;cursor:pointer}
+  .card:hover{border-color:var(--accent)}
+  .card .ct{font-size:15px;font-weight:700;margin-bottom:6px}
+  .card .cd{font-size:13px;color:var(--sub);line-height:1.6}
+  .chip{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border:1px solid}
+  .chip.draft{color:var(--accent-2);border-color:#d9c08f;background:#fdf8ec}
+  .chip.pub{color:var(--accent-ink);border-color:#b9d4c6;background:#f0f7f3}
+  .mg-grid{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .mg-list{flex:1;min-width:260px}
+  .mg-form{flex:1.6;min-width:300px}
+  .qitem{display:flex;gap:8px;align-items:baseline;padding:8px 10px;border:1px solid transparent;cursor:pointer;font-size:14px}
+  .qitem:hover{background:#fbfbf9}
+  .qitem.sel{border-color:var(--accent);background:#f0f7f3}
+  .qitem .qid{color:var(--faint);font-size:12px;font-weight:700;min-width:34px}
+  .qitem .qtx{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qitem .qtag{font-size:11px;font-weight:700;color:var(--sub);border:1px solid var(--line);padding:0 6px;flex:none}
+  .qitem .qflag{color:var(--accent-2);font-weight:700;flex:none}
+  .mg-rolehead{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:14px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--line2)}
+  .mg-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  textarea.mgta{width:100%;padding:10px 12px;border:1px solid var(--line);font-size:14.5px;font-family:inherit;color:var(--ink);resize:vertical}
+  textarea.mgta:focus{outline:none;border-color:var(--accent)}
+  .mg-field{margin-bottom:14px}
+  .mg-mini{border:1px dashed var(--line);background:#fbfbf9;padding:14px 16px;margin-top:16px}
+  .mg-mini .mm-k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:8px}
+  .sumline{font-size:13px;color:var(--sub);background:#fbfbf9;border:1px solid var(--line2);padding:8px 11px;margin-top:6px;line-height:1.6}
+  .switchrow{display:flex;align-items:center;gap:8px;font-size:14px}
+  .catbox{border:1px solid var(--line2);background:#fbfbf9;font-size:13.5px;padding:10px 14px;margin-top:12px;line-height:1.8}
   @media(max-width:600px){.opts,.cat,.gt,.dis-note{margin-left:0}}
 </style>
 </head>
@@ -118,10 +147,11 @@
   <div class="demo-note">概念原型　題目與資料皆為模擬，用以驗證系統可行性（資料僅存於此瀏覽器，無伺服器）<span class="resetlink" id="resetLink" onclick="resetDemo()">重置示範資料</span></div>
   <div class="kicker">問卷系統</div>
   <h1>企業問卷 — 完整系統原型</h1>
-  <p class="lede">單一份設定檔（以 Excel／CSV 維護）貫穿全系統：填寫端（引導式體驗、多型連動、表格題、必填驗證、說明超連結）、Excel 匯入（換一份檔案即換整份問卷，匯入時自動驗證防呆）、資料端（多公司分別歸檔、依職位與分類自動整合、可匯出）、一次性填寫連結（免帳號、送出即失效）。</p>
+  <p class="lede">填寫端（引導式體驗、多型連動、表格題、必填驗證、說明超連結）＋管理端（問卷管理：自行建立、編輯、預覽、發布；Excel 批次匯入含驗證防呆）＋資料端（多公司分別歸檔、依職位與分類自動整合、條件提取、匯出）＋一次性填寫連結（免帳號、送出即失效）。</p>
   <div class="rule"></div>
   <div class="tabs">
     <div class="tab on" id="t-fill" onclick="tab('fill')">填寫問卷</div>
+    <div class="tab" id="t-manage" onclick="tab('manage')">問卷管理</div>
     <div class="tab" id="t-edit" onclick="tab('edit')">Excel 匯入</div>
     <div class="tab" id="t-data" onclick="tab('data')">資料整合 ／ 匯出</div>
     <div class="tab" id="t-links" onclick="tab('links')">一次性填寫連結</div>
@@ -143,13 +173,78 @@
     </div>
   </div>
 
+  <div id="view-manage" class="hidden">
+    <!-- 首頁：建立入口 + 問卷清單 -->
+    <div id="mgHome">
+      <div class="panel">
+        <div class="sec-t">建立新問卷</div>
+        <div class="sec-d">新案件不需要先做 Excel——可直接從模板或既有問卷建立，在此編輯、預覽後發布。</div>
+        <div class="cards">
+          <div class="card" onclick="mgCreate('template')">
+            <div class="ct">從共用模板建立</div>
+            <div class="cd">以標準 ESG 模板為底建立草稿，再依受評公司調整題目與說明。</div>
+          </div>
+          <div class="card" onclick="tab('edit')">
+            <div class="ct">匯入 Excel 建立草稿</div>
+            <div class="cd">以青山標準 Excel 範本批次建立；匯入後回到此頁檢查、調整、預覽與發布。</div>
+          </div>
+          <div class="card" onclick="mgCreate('current')">
+            <div class="ct">複製既有公司問卷</div>
+            <div class="cd">複製目前生效的問卷為新草稿，微調後用於新的受評公司或新年度。</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="sec-t">問卷清單</div>
+        <div class="sec-d">草稿可隨時編輯；發布後即成為填寫端使用的版本。</div>
+        <div id="mgDraftList"></div>
+      </div>
+    </div>
+    <!-- 編輯器 -->
+    <div id="mgEditor" class="hidden">
+      <div class="panel">
+        <div class="row" style="align-items:flex-end">
+          <div class="field" style="flex:1.4"><label class="lbl">問卷名稱</label>
+            <input id="mgName" type="text" oninput="mgCur&&(mgCur.name=this.value)"></div>
+          <div class="field" style="flex:none;align-self:center"><span id="mgStatus"></span></div>
+        </div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn ghost sm" onclick="mgBack()">← 返回清單</button>
+          <button class="btn ghost sm" onclick="mgSaveDraft()">儲存草稿</button>
+          <button class="btn ghost sm" id="mgPrevBtn" onclick="mgTogglePreview(!mgPrevOn)">預覽填答畫面</button>
+          <button class="btn sm" onclick="mgPublish()">發布</button>
+        </div>
+      </div>
+      <div id="mgEditBody" class="mg-grid">
+        <div class="panel mg-list">
+          <div class="sec-t">區塊與題目</div>
+          <div id="mgQList"></div>
+          <div class="actions" style="margin-top:14px"><button class="btn ghost sm" onclick="mgAdd()">＋ 新增題目</button></div>
+        </div>
+        <div class="panel mg-form">
+          <div class="sec-t">題目編輯</div>
+          <div id="mgForm"></div>
+        </div>
+      </div>
+      <div id="mgPrevPane" class="panel hidden">
+        <div class="row" style="align-items:flex-end;margin-bottom:6px">
+          <div class="field" style="max-width:280px"><label class="lbl">以此職位預覽</label>
+            <select id="mgPrevRoleSel" onchange="mgPrevAnswers={};renderMgPreview()"></select></div>
+          <div class="field" style="flex:none;align-self:flex-end"><button class="btn ghost sm" onclick="mgTogglePreview(false)">返回編輯</button></div>
+        </div>
+        <div class="footnote" style="margin:0 0 10px">此預覽為可互動模擬：連動、禁填、表格鎖定與加總皆與填寫端一致。</div>
+        <div id="mgPrevBody"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="view-edit" class="hidden">
     <div class="panel">
-      <div class="sec-t">以 Excel 維護問卷</div>
-      <div class="sec-d">青山在 Excel 定義／修改問卷（題目、選項、分類、職位、連動規則），存成 CSV 後於此匯入，填寫端即刻更新——不需改程式、不需工程師。此原型以 CSV 示範（Excel 可直接開啟／另存 CSV）；正式版可支援 .xlsx 直接匯入。</div>
+      <div class="sec-t">以 Excel 批次建立問卷草稿</div>
+      <div class="sec-d">可透過青山標準 Excel 範本批次建立問卷草稿；匯入後可在「問卷管理」頁檢查、調整、預覽與發布。適用情境：<b>既有問卷搬遷</b>、<b>大量題目批次建立</b>、<b>外部協作人員依標準範本交付</b>。未來新案件也可以直接從共用模板或既有問卷建立，不一定需要先製作 Excel。此原型以 CSV 示範（Excel 可直接開啟／另存 CSV）；正式版支援 .xlsx；非標準格式的舊 Excel 辨識程度需依真實案例於規格階段驗證。</div>
       <div class="filebox">
         <input type="file" accept=".csv,text/csv" onchange="onFile(event)">
-        <div class="footnote" style="margin-top:8px">選擇隨附的範例 CSV（esg／supplier／satisfaction）試試——換一份檔案就是一份全新問卷。</div>
+        <div class="footnote" style="margin-top:8px">選擇隨附的範例 CSV 試試——匯入後會建立一份草稿，到「問卷管理」檢查與發布。</div>
       </div>
       <div class="actions" style="margin-top:14px">
         <button class="btn ghost" onclick="downloadTemplate()">下載 Excel 範本（CSV）</button>
@@ -157,8 +252,8 @@
       </div>
     </div>
     <div class="panel">
-      <div class="sec-t">目前問卷內容（＝你的 Excel）</div>
-      <div class="sec-d">下表即目前生效的問卷。青山於 Excel 對應修改後匯入即可。</div>
+      <div class="sec-t">目前生效的問卷（發布版本）</div>
+      <div class="sec-d">下表為填寫端目前使用的版本。日常修改可直接在「問卷管理」進行；批次調整亦可用 Excel 匯入成草稿後發布取代。</div>
       <div style="overflow-x:auto"><div id="xls"></div></div>
     </div>
   </div>
@@ -260,21 +355,26 @@ function buildRoleSelect(){const sel=document.getElementById('role');const cur=s
   if(roles().includes(cur))sel.value=cur;}
 function currentRole(){return document.getElementById('role').value;}
 
+const TABS=['fill','manage','edit','data','links'];
 function tab(name){if(LINKMODE&&name!=='fill')return; /* 連結模式:僅能填寫 */
- ['fill','edit','data','links'].forEach(n=>{document.getElementById('view-'+n).classList.toggle('hidden',n!==name);document.getElementById('t-'+n).classList.toggle('on',n===name);});if(name==='edit')renderImport();if(name==='data'){renderTree();renderExtract();}if(name==='links'){linkRoleOptions();renderLinks();}}
+ TABS.forEach(n=>{document.getElementById('view-'+n).classList.toggle('hidden',n!==name);document.getElementById('t-'+n).classList.toggle('on',n===name);});
+ if(name==='manage')renderManage();if(name==='edit')renderImport();if(name==='data'){renderTree();renderExtract();}if(name==='links'){linkRoleOptions();renderLinks();}}
 function setLinkModeUI(on){ /* 連結模式:隱藏管理端分頁與重置,只留填寫 */
- ['t-edit','t-data','t-links'].forEach(id=>document.getElementById(id).classList.toggle('hidden',on));
+ ['t-manage','t-edit','t-data','t-links'].forEach(id=>document.getElementById(id).classList.toggle('hidden',on));
  const r=document.getElementById('resetLink');if(r)r.classList.toggle('hidden',on);
  if(on)tabForce('fill');}
-function tabForce(name){['fill','edit','data','links'].forEach(n=>{document.getElementById('view-'+n).classList.toggle('hidden',n!==name);document.getElementById('t-'+n).classList.toggle('on',n===name);});}
+function tabForce(name){TABS.forEach(n=>{document.getElementById('view-'+n).classList.toggle('hidden',n!==name);document.getElementById('t-'+n).classList.toggle('on',n===name);});}
 
-function isDisabled(q){return q.disableIf&&answers[q.disableIf.q]===q.disableIf.eq;}
-function visibleQuestions(){const role=currentRole();return CONFIG.questions.filter(q=>{
+/* 參數化的可見性/禁填判斷：填寫端與問卷管理預覽共用同一套引擎 */
+function isDisabledQ(q,ans){return q.disableIf&&ans[q.disableIf.q]===q.disableIf.eq;}
+function calcVisible(qs,role,ans){return qs.filter(q=>{
   if(q.role!==role)return false;
-  if(q.showIf){const a=answers[q.showIf.q];if(a===undefined)return false;
+  if(q.showIf){const a=ans[q.showIf.q];if(a===undefined)return false;
     if(q.showIf.eq!==undefined&&a!==q.showIf.eq)return false;
     if(q.showIf.in!==undefined&&!q.showIf.in.includes(a))return false;}
   return true;});}
+function isDisabled(q){return isDisabledQ(q,answers);}
+function visibleQuestions(){return calcVisible(CONFIG.questions,currentRole(),answers);}
 function escapeHtml(s){return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function linkify(q){if(!q.link)return escapeHtml(q.text);const t=escapeHtml(q.text),term=escapeHtml(q.link);
   return t.replace(term,`<span class="qlink" onclick="drawer('${q.link.replace(/'/g,"")}',LINKS['${q.link.replace(/'/g,"")}']||'')">${term}</span>`);}
@@ -292,7 +392,7 @@ function renderFill(){
     const dis=isDisabled(q); if(!dis){answerable++;if(answers[q.id]!==undefined)answered++;}
     html+=`<div class="q ${dis?'disabled':''}"><div class="qt"><span class="num">${q.id}</span><span>${linkify(q)}</span></div><div class="opts">`;
     q.options.forEach(o=>{html+=`<div class="opt ${answers[q.id]===o?'sel':''}" ${dis?'':`onclick="pick('${q.id}',this.textContent)"`}>${escapeHtml(o)}</div>`;});
-    html+=`</div>${dis?`<div class="dis-note">依前題作答，此題免填</div>`:`<div class="cat">分類　${escapeHtml(q.category)}</div>`}</div>`;
+    html+=`</div>${dis?`<div class="dis-note">依前題作答，此題免填</div>`:`<div class="cat">分類　${escapeHtml(q.category)}${q.optional?'　·　（選填）':''}</div>`}</div>`;
   });
   html+=`</div>`;
   document.getElementById('form').innerHTML=html;
@@ -347,7 +447,7 @@ function submitForm(){
         if(q.stopValues.includes(r[q.stopCol]))return; /* 已觸發鎖定，後續免填 */
         q.columns.forEach(c=>{if(c.key!==q.stopCol&&r[c.key]===undefined)missing.push(`${q.id}　${rw} — 「${c.label}」未填`);});});
       return;}
-    if(answers[q.id]===undefined)missing.push(`${q.id}　${q.text}`);});
+    if(!q.optional&&answers[q.id]===undefined)missing.push(`${q.id}　${q.text}`);});
   if(missing.length){
     modal("尚有必填項目未完成",`為確保資料完整性，送出前需完成以下項目（凡因連動而隱藏、免填、鎖定者已自動排除）：
       <div class="misslist">${missing.map(m=>escapeHtml(m)).join('<br>')}</div>`);
@@ -413,51 +513,53 @@ function applyImport(objs){
     qs.push(q);
   });
   if(!qs.length){alert('沒有讀到有效題目，請確認 CSV 標題列與內容');return;}
-  /* ── 匯入驗證（防呆）：抓出 Excel 裡的設定錯誤，先報告再套用 ── */
-  const warns=[];
+  /* ── 匯入驗證（防呆）：先驗證，再建立為「草稿」——不直接影響生效中的問卷 ── */
+  const warns=[],flagged=new Set();
+  const warn=(id,msg)=>{warns.push(msg);if(id)flagged.add(id);};
   const skipped=objs.filter(o=>((o['題型']||'單選').trim()!=='職位說明')&&(!o['題號']||!o['題目'])).length;
-  if(skipped)warns.push(`${skipped} 列因缺「題號」或「題目」被略過`);
-  const seen=new Set(),dedup=[];
-  qs.forEach(q=>{if(seen.has(q.id)){warns.push(`題號「${q.id}」重複——僅保留第一筆，後者已忽略`);return;}seen.add(q.id);dedup.push(q);});
+  if(skipped)warn(null,`${skipped} 列因缺「題號」或「題目」被略過`);
+  const seen=new Set(),dedup=[];let dupN=0;
+  qs.forEach(q=>{if(seen.has(q.id)){dupN++;warn(null,`題號「${q.id}」重複——僅保留第一筆，後者已忽略`);return;}seen.add(q.id);dedup.push(q);});
   dedup.forEach(q=>{
     if(q.type==='table'){
-      if(!q.columns.length)warns.push(`${q.id}（表格）沒有讀到任何欄位定義`);
-      if(!q.rows.length)warns.push(`${q.id}（表格）缺「表格列」`);
-      if(q.stopCol&&q.columns.length&&!q.columns.find(c=>c.key===q.stopCol))warns.push(`${q.id}（表格）的停止欄「${q.stopCol}」不在欄位清單中`);
-      if(!q.stopValues.length)warns.push(`${q.id}（表格）缺「停止值」，鎖定連動將不會生效`);
+      if(!q.columns.length)warn(q.id,`${q.id}（表格）沒有讀到任何欄位定義`);
+      if(!q.rows.length)warn(q.id,`${q.id}（表格）缺「表格列」`);
+      if(q.stopCol&&q.columns.length&&!q.columns.find(c=>c.key===q.stopCol))warn(q.id,`${q.id}（表格）的停止欄「${q.stopCol}」不在欄位清單中`);
+      if(!q.stopValues.length)warn(q.id,`${q.id}（表格）缺「停止值」，鎖定連動將不會生效`);
       (q.sumCols||[]).forEach(k=>{
         const col=q.columns.find(c=>c.key===k);
-        if(!col)warns.push(`${q.id} 的加總欄「${k}」不在欄位清單中，將不會加總`);
-        else if(col.type!=='num')warns.push(`${q.id} 的加總欄「${k}」不是數字欄位（:num），加總結果可能不正確`);
+        if(!col)warn(q.id,`${q.id} 的加總欄「${k}」不在欄位清單中，將不會加總`);
+        else if(col.type!=='num')warn(q.id,`${q.id} 的加總欄「${k}」不是數字欄位（:num），加總結果可能不正確`);
       });
       return;}
-    if(!q.options.length)warns.push(`${q.id} 沒有讀到任何選項`);
+    if(!q.options.length)warn(q.id,`${q.id} 沒有讀到任何選項`);
     [['showIf','顯示'],['disableIf','禁填']].forEach(([k,name])=>{
       const r=q[k];if(!r)return;
       const t=dedup.find(x=>x.id===r.q);
-      if(!t){warns.push(`${q.id} 的${name}連動指向「${r.q}」——此題號不存在，連動將永遠不生效`);return;}
-      if(t.type==='table'){warns.push(`${q.id} 的${name}連動指向表格題「${r.q}」，不支援`);return;}
-      if(r.eq!==undefined&&!t.options.includes(r.eq))warns.push(`${q.id} 的${name}連動值「${r.eq}」不在 ${r.q} 的選項（${t.options.join('／')}）中，連動將永遠不生效`);
-      if(t.role!==q.role)warns.push(`${q.id}（${q.role}）連動到不同職位的 ${r.q}（${t.role}）——填答人看不到觸發題`);});
+      if(!t){warn(q.id,`${q.id} 的${name}連動指向「${r.q}」——此題號不存在，連動將永遠不生效`);return;}
+      if(t.type==='table'){warn(q.id,`${q.id} 的${name}連動指向表格題「${r.q}」，不支援`);return;}
+      if(r.eq!==undefined&&!t.options.includes(r.eq))warn(q.id,`${q.id} 的${name}連動值「${r.eq}」不在 ${r.q} 的選項（${t.options.join('／')}）中，連動將永遠不生效`);
+      if(t.role!==q.role)warn(q.id,`${q.id}（${q.role}）連動到不同職位的 ${r.q}（${t.role}）——填答人看不到觸發題`);});
   });
-  CONFIG.questions=dedup;LINKS={};Object.assign(LINKS,links);
-  ROLEHELP={};Object.assign(ROLEHELP,roleHelp);
-  answers={};buildRoleSelect();renderFill();renderImport();
+  /* 建立草稿：正式問卷以系統草稿／發布版本為準 */
+  const d={id:mgId(),name:'匯入草稿 '+(DRAFTS.length+1),status:'draft',
+    questions:dedup,roleHelp:roleHelp,links:links,flagged:[...flagged]};
+  DRAFTS.push(d);saveState();
   const nShow=dedup.filter(q=>q.showIf).length,nDis=dedup.filter(q=>q.disableIf).length,nTab=dedup.filter(q=>q.type==='table').length,nLink=Object.keys(links).length;
   const nHelp=Object.keys(roleHelp).length,nSum=dedup.filter(q=>q.type==='table'&&q.sumCols&&q.sumCols.length).length;
+  const okN=dedup.length-flagged.size,pendN=flagged.size,badN=skipped+dupN;
   const verdict=warns.length
-    ?`<div class="warnbox"><b>驗證發現 ${warns.length} 個問題</b>（已套用可用部分，建議回 Excel 修正後重新匯入）：<br>${warns.map(w=>'・'+escapeHtml(w)).join('<br>')}</div>`
+    ?`<div class="warnbox"><b>驗證發現 ${warns.length} 個問題</b>（可用部分已納入草稿，建議於問卷管理或 Excel 修正）：<br>${warns.map(w=>'・'+escapeHtml(w)).join('<br>')}</div>`
     :`<div class="okbox"><b>驗證通過</b>——未發現重複題號、斷鏈連動、無效連動值或表格缺漏。</div>`;
-  modal("匯入完成 · 讀取結果",
-    `<b>${dedup.length}</b> 題　·　${roles().length} 種職位（${roles().join('、')}）<br><br>
-     讀取到的連動與功能：<br>
-     ・顯示連動 <b>${nShow}</b> 個<br>
-     ・禁填連動 <b>${nDis}</b> 個<br>
-     ・表格題 <b>${nTab}</b> 個（含自動加總 ${nSum} 個）<br>
-     ・超連結說明 <b>${nLink}</b> 個<br>
-     ・區塊說明 <b>${nHelp}</b> 個
-     ${verdict}
-     <br>可在下方「目前問卷內容」表格逐列核對，或切至「填寫問卷」實際操作。整套只是換一份 Excel，程式完全沒動。`);
+  const cats=`<div class="catbox"><b>匯入結果分類</b>（依上述驗證結果統計，非 AI 推測）：<br>
+     ・已成功辨識　<b>${okN}</b> 題<br>
+     ・待人工確認　<b>${pendN}</b> 題（已於問卷管理清單以 ⚠ 標記）<br>
+     ・不支援／需調整　<b>${badN}</b> 列（重複題號或缺必要欄位，未納入草稿）</div>`;
+  modal("匯入完成 · 已建立草稿",
+    `已建立草稿「<b>${escapeHtml(d.name)}</b>」——<b>尚未影響</b>填寫端目前使用中的問卷；請至問卷管理檢查、調整、預覽後發布。<br><br>
+     <b>${dedup.length}</b> 題　·　${[...new Set(dedup.map(q=>q.role))].length} 種職位　·　顯示連動 ${nShow}、禁填連動 ${nDis}、表格題 ${nTab}（自動加總 ${nSum}）、超連結說明 ${nLink}、區塊說明 ${nHelp}
+     ${verdict}${cats}
+     <div class="actions" style="margin-top:14px"><button class="btn sm" onclick="gotoManageDraft('${d.id}')">前往問卷管理檢查</button></div>`);
 }
 function renderImport(){
   let h='';
@@ -556,9 +658,12 @@ let ISSUED=[
 ];
 let LINKMODE=null;
 /* 資料持久化（localStorage）：重新整理不遺失；僅存於此瀏覽器 */
-function saveState(){try{localStorage.setItem('sqdemo',JSON.stringify({sub:SUBMISSIONS,iss:ISSUED}))}catch(e){}}
+function saveState(){try{localStorage.setItem('sqdemo',JSON.stringify({sub:SUBMISSIONS,iss:ISSUED,drafts:DRAFTS,pub:publishedId}))}catch(e){}}
 function loadState(){try{const s=JSON.parse(localStorage.getItem('sqdemo')||'null');
-  if(s){if(Array.isArray(s.sub))SUBMISSIONS=s.sub;if(Array.isArray(s.iss))ISSUED=s.iss;}}catch(e){}}
+  if(s){if(Array.isArray(s.sub))SUBMISSIONS=s.sub;if(Array.isArray(s.iss))ISSUED=s.iss;
+    if(Array.isArray(s.drafts))DRAFTS=s.drafts;
+    if(s.pub){publishedId=s.pub;const d=DRAFTS.find(x=>x.id===publishedId);
+      if(d){CONFIG.questions=deep(d.questions);ROLEHELP=deep(d.roleHelp||{});LINKS=deep(d.links||{});}}}}catch(e){}}
 function resetDemo(){localStorage.removeItem('sqdemo');location.href=location.pathname;}
 function demoUrl(t){return location.origin+location.pathname+'?f='+t;}
 function linkRoleOptions(){
@@ -612,6 +717,200 @@ function downloadTemplate(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=`問卷設定範本.csv`;a.click();
   modal("範本已下載",`用 Excel 開啟「問卷設定範本.csv」，照欄位規則增修題目後存檔，回到此頁匯入即可。範本內含示範：區塊說明、一般單選、顯示連動、禁填連動、Excel 式表格（含鎖定與自動加總）。`);
 }
+
+/* ===== 問卷管理：草稿 → 受限編輯 → 預覽 → 發布 ===== */
+function deep(x){return JSON.parse(JSON.stringify(x));}
+let DRAFTS=[],publishedId=null,mgCur=null,mgSel=0,mgPrevOn=false,mgPrevAnswers={};
+/* 共用模板 = 啟動時的內建問卷快照（不受後續匯入/發布影響） */
+const TEMPLATE={questions:deep(CONFIG.questions),roleHelp:deep(ROLEHELP),links:deep(LINKS)};
+function mgId(){return 'dft'+Math.random().toString(36).slice(2,8);}
+function mgNewQid(qs){let n=1;while(qs.some(q=>q.id==='N'+n))n++;return 'N'+n;}
+function mgCreate(kind){
+  let d;
+  if(kind==='template')d={id:mgId(),name:'新問卷（模板）'+(DRAFTS.length+1),status:'draft',
+    questions:deep(TEMPLATE.questions),roleHelp:deep(TEMPLATE.roleHelp),links:deep(TEMPLATE.links)};
+  else d={id:mgId(),name:'複製：現行問卷 '+(DRAFTS.length+1),status:'draft',
+    questions:deep(CONFIG.questions),roleHelp:deep(ROLEHELP),links:deep(LINKS)};
+  DRAFTS.push(d);saveState();mgOpen(d.id);
+}
+function mgDupDraft(id){const s=DRAFTS.find(x=>x.id===id);if(!s)return;
+  const d=deep(s);d.id=mgId();d.name=s.name+'（複本）';d.status='draft';delete d.flagged;
+  DRAFTS.push(d);saveState();renderManage();}
+function mgDelDraft(id){const d=DRAFTS.find(x=>x.id===id);if(!d)return;
+  if(d.id===publishedId){modal('無法刪除','此問卷為目前發布中的版本，填寫端正在使用。請先發布其他問卷後再刪除。');return;}
+  DRAFTS=DRAFTS.filter(x=>x.id!==id);if(mgCur&&mgCur.id===id)mgCur=null;saveState();renderManage();}
+function mgOpen(id){mgCur=DRAFTS.find(x=>x.id===id)||null;mgSel=0;mgPrevOn=false;mgPrevAnswers={};renderManage();}
+function mgBack(){saveState();mgCur=null;mgPrevOn=false;renderManage();}
+function renderManage(){
+  const home=document.getElementById('mgHome'),ed=document.getElementById('mgEditor');
+  if(!mgCur){home.classList.remove('hidden');ed.classList.add('hidden');mgRenderHome();return;}
+  home.classList.add('hidden');ed.classList.remove('hidden');
+  document.getElementById('mgName').value=mgCur.name;
+  document.getElementById('mgStatus').innerHTML=mgCur.id===publishedId
+    ?'<span class="chip pub">已發布（填寫端使用中）</span>':'<span class="chip draft">草稿</span>';
+  document.getElementById('mgEditBody').classList.toggle('hidden',mgPrevOn);
+  document.getElementById('mgPrevPane').classList.toggle('hidden',!mgPrevOn);
+  document.getElementById('mgPrevBtn').textContent=mgPrevOn?'返回編輯':'預覽填答畫面';
+  if(mgPrevOn){mgFillPrevRoles();renderMgPreview();}
+  else{mgRenderList();mgRenderForm();}
+}
+function mgRenderHome(){
+  const box=document.getElementById('mgDraftList');
+  if(!DRAFTS.length){box.innerHTML='<div class="footnote">尚無問卷。可由上方三種方式建立，或至「Excel 匯入」批次建立草稿。</div>';return;}
+  let h='<table class="exp"><tr><th>名稱</th><th>狀態</th><th>題數</th><th>職位</th><th style="width:200px">動作</th></tr>';
+  DRAFTS.forEach(d=>{
+    const nR=[...new Set(d.questions.map(q=>q.role))].length;
+    h+=`<tr><td>${escapeHtml(d.name)}</td>
+      <td>${d.id===publishedId?'<span class="chip pub">已發布</span>':'<span class="chip draft">草稿</span>'}</td>
+      <td>${d.questions.length}</td><td>${nR}</td>
+      <td><button class="btn sm" onclick="mgOpen('${d.id}')">編輯</button>
+          <button class="btn ghost sm" onclick="mgDupDraft('${d.id}')">複製</button>
+          <button class="btn ghost sm" onclick="mgDelDraft('${d.id}')">刪除</button></td></tr>`;});
+  h+='</table>';box.innerHTML=h;
+}
+function mgRenderList(){
+  const box=document.getElementById('mgQList');const qs=mgCur.questions;
+  const flag=new Set(mgCur.flagged||[]);
+  let h='',lastRole=null;
+  qs.forEach((q,i)=>{
+    if(q.role!==lastRole){lastRole=q.role;h+=`<div class="mg-rolehead">${escapeHtml(q.role)}</div>`;}
+    const cond=(q.showIf||q.disableIf)?'<span class="qtag">連動</span>':'';
+    h+=`<div class="qitem ${i===mgSel?'sel':''}" onclick="mgSelect(${i})">
+      <span class="qid">${escapeHtml(q.id)}</span><span class="qtx">${escapeHtml(q.text)}</span>
+      ${flag.has(q.id)?'<span class="qflag" title="匯入時列為待人工確認">⚠</span>':''}
+      ${cond}<span class="qtag">${q.type==='table'?'表格':'單選'}</span></div>`;});
+  box.innerHTML=h;
+}
+function mgSelect(i){mgSel=i;mgRenderList();mgRenderForm();}
+function mgQ(){return mgCur&&mgCur.questions[mgSel];}
+function mgRenderForm(){
+  const box=document.getElementById('mgForm');const q=mgQ();
+  if(!q){box.innerHTML='<div class="footnote">請於左側選擇題目，或新增題目。</div>';return;}
+  const rolesList=[...new Set(mgCur.questions.map(x=>x.role))];
+  let h=`<div class="mg-toolbar">
+    <button class="btn ghost sm" onclick="mgMove(-1)">↑ 上移</button>
+    <button class="btn ghost sm" onclick="mgMove(1)">↓ 下移</button>
+    <button class="btn ghost sm" onclick="mgDup()">複製</button>
+    <button class="btn ghost sm" onclick="mgDel()">刪除</button></div>`;
+  h+=`<div class="mg-field"><label class="lbl">題目文字</label>
+    <textarea class="mgta" rows="2" oninput="mgF('text',this.value)">${escapeHtml(q.text)}</textarea></div>`;
+  h+=`<div class="row">
+    <div class="field"><label class="lbl">題型</label>
+      <select onchange="mgType(this)"><option ${q.type!=='table'?'selected':''}>單選</option><option ${q.type==='table'?'selected':''}>表格</option></select></div>
+    <div class="field"><label class="lbl">職位（區塊）</label>
+      <input type="text" list="mgRoleList" value="${escapeHtml(q.role)}" oninput="mgF('role',this.value)">
+      <datalist id="mgRoleList">${rolesList.map(r=>`<option value="${escapeHtml(r)}">`).join('')}</datalist></div>
+    <div class="field"><label class="lbl">分類</label>
+      <input type="text" value="${escapeHtml(q.category)}" oninput="mgF('category',this.value)"></div></div>`;
+  if(q.type!=='table'){
+    h+=`<div class="mg-field" style="margin-top:14px"><label class="lbl">選項（每行一個）</label>
+      <textarea class="mgta" rows="3" oninput="mgOptsSet(this.value)">${escapeHtml((q.options||[]).join('\n'))}</textarea></div>`;
+    h+=`<div class="mg-field switchrow"><input type="checkbox" id="mgReq" ${q.optional?'':'checked'} onchange="mgF('optional',!this.checked)"><label for="mgReq">必填</label></div>`;
+    h+=`<div class="row"><div class="field"><label class="lbl">超連結詞（題目內可點開說明的字詞，選填）</label>
+      <input type="text" value="${escapeHtml(q.link||'')}" oninput="mgLinkSet(this.value)"></div></div>
+      <div class="mg-field" style="margin-top:14px"><label class="lbl">說明文字（點超連結詞後顯示）</label>
+      <textarea class="mgta" rows="2" oninput="mgLinkHelpSet(this.value)">${escapeHtml(q.link?((mgCur.links||{})[q.link]||''):'')}</textarea></div>`;
+  }else{
+    h+=`<div class="sumline"><b>表格題摘要</b><br>欄位：${q.columns.map(c=>escapeHtml(c.label)+'（'+c.type+'）').join('、')}<br>列：${q.rows.map(escapeHtml).join('、')}<br>鎖定：首欄「${escapeHtml(q.stopValues.join('/'))}」→ 整列後續免填${q.sumCols&&q.sumCols.length?'<br>自動加總：'+q.sumCols.map(escapeHtml).join('、'):''}</div>
+    <div class="footnote">表格欄位、鎖定與加總的完整編輯，正式版將依規格支援；本原型可調整題目文字、職位與分類，或以 Excel 匯入批次修改。</div>`;
+  }
+  if(q.showIf||q.disableIf){const r=q.showIf||q.disableIf;
+    h+=`<div class="sumline"><b>連動</b>　${q.showIf?'顯示條件':'禁填條件'}：當 ${escapeHtml(r.q)} ＝ ${escapeHtml(r.eq!==undefined?r.eq:(r.in||[]).join('/'))}
+      <span class="footnote" style="display:block;margin-top:4px">連動規則的編輯，正式版將依規格支援；本原型可先於 Excel 匯入時設定。</span></div>`;}
+  h+=`<div class="mg-mini"><div class="mm-k">即時預覽（此題）</div><div id="mgMini"></div></div>`;
+  box.innerHTML=h;mgRenderMini();
+}
+function mgF(k,v){const q=mgQ();if(!q)return;q[k]=v;mgRenderList();mgRenderMini();}
+function mgOptsSet(t){const q=mgQ();if(!q)return;q.options=t.split('\n').map(s=>s.trim()).filter(Boolean);mgRenderMini();}
+function mgLinkSet(v){const q=mgQ();if(!q)return;v=v.trim();mgCur.links=mgCur.links||{};
+  const oldHelp=q.link?(mgCur.links[q.link]||''):'';
+  if(v){if(mgCur.links[v]===undefined)mgCur.links[v]=oldHelp;q.link=v;}else delete q.link;
+  mgRenderMini();}
+function mgLinkHelpSet(v){const q=mgQ();if(!q||!q.link)return;mgCur.links=mgCur.links||{};mgCur.links[q.link]=v;}
+function mgType(sel){const q=mgQ();if(!q)return;
+  const isTable=q.type==='table',wantTable=sel.value==='表格';
+  if(isTable!==wantTable){
+    modal('題型轉換','表格題與單選題結構不同，題型轉換將於正式版依規格支援。本原型可用「新增題目」建立單選題，或以 Excel 匯入建立表格題。');
+    sel.value=isTable?'表格':'單選';}}
+function mgMove(d){const i=mgSel,j=i+d,qs=mgCur.questions;if(j<0||j>=qs.length)return;
+  [qs[i],qs[j]]=[qs[j],qs[i]];mgSel=j;saveState();mgRenderList();mgRenderForm();}
+function mgDup(){const qs=mgCur.questions,q=deep(qs[mgSel]);if(!q)return;
+  q.id=mgNewQid(qs);qs.splice(mgSel+1,0,q);mgSel++;saveState();mgRenderList();mgRenderForm();}
+function mgDel(){const qs=mgCur.questions,q=qs[mgSel];if(!q)return;
+  const dep=qs.filter(x=>(x.showIf&&x.showIf.q===q.id)||(x.disableIf&&x.disableIf.q===q.id)).map(x=>x.id);
+  if(dep.length){modal('無法刪除',`題目 ${escapeHtml(q.id)} 被 ${dep.map(escapeHtml).join('、')} 的連動引用，直接刪除會造成斷鏈。請先調整該連動（正式版將提供引導處理）。`);return;}
+  qs.splice(mgSel,1);if(mgSel>=qs.length)mgSel=Math.max(0,qs.length-1);saveState();mgRenderList();mgRenderForm();}
+function mgAdd(){const qs=mgCur.questions,base=mgQ();
+  const q={id:mgNewQid(qs),role:base?base.role:(qs[0]?qs[0].role:'填答人'),category:'未分類',text:'新題目（請編輯內容）',options:['是','否']};
+  const at=qs.length?mgSel+1:0;qs.splice(at,0,q);mgSel=at;saveState();mgRenderList();mgRenderForm();}
+function mgRenderMini(){const el=document.getElementById('mgMini');if(!el)return;const q=mgQ();if(!q){el.innerHTML='';return;}
+  if(q.type==='table'){el.innerHTML=`<div class="qt" style="margin:0 0 6px"><span class="num">${escapeHtml(q.id)}</span><span>${escapeHtml(q.text)}</span></div><div class="footnote">表格題請用「預覽填答畫面」檢視完整互動（含鎖定與加總）。</div>`;return;}
+  let t=escapeHtml(q.text);
+  if(q.link){const term=escapeHtml(q.link);t=t.replace(term,`<span class="qlink">${term}</span>`);}
+  el.innerHTML=`<div class="qt" style="margin:0 0 8px"><span class="num">${escapeHtml(q.id)}</span><span>${t}</span></div>
+   <div class="opts" style="margin-left:0">${(q.options||[]).map(o=>`<div class="opt">${escapeHtml(o)}</div>`).join('')}</div>
+   <div class="cat" style="margin-left:0">分類　${escapeHtml(q.category)}${q.optional?'　·　（選填）':''}</div>`;}
+function mgSaveDraft(){if(!mgCur)return;saveState();modal('已儲存草稿',`「${escapeHtml(mgCur.name)}」已儲存。重新整理頁面後仍會保留（示範資料存於此瀏覽器）。`);}
+function mgPublish(){if(!mgCur)return;
+  DRAFTS.forEach(d=>{if(d.id!==mgCur.id&&d.status==='published')d.status='draft';});
+  mgCur.status='published';publishedId=mgCur.id;
+  CONFIG.questions=deep(mgCur.questions);ROLEHELP=deep(mgCur.roleHelp||{});LINKS=deep(mgCur.links||{});
+  answers={};buildRoleSelect();renderFill();saveState();renderManage();
+  modal('已發布',`「${escapeHtml(mgCur.name)}」已發布為正式版本——「填寫問卷」與一次性連結現在皆使用此問卷。`);}
+/* --- 整卷互動預覽（與填寫端同一套連動/表格/加總引擎） --- */
+function mgFillPrevRoles(){const sel=document.getElementById('mgPrevRoleSel');
+  const rs=[...new Set(mgCur.questions.map(q=>q.role))],cur=sel.value;
+  sel.innerHTML=rs.map(r=>`<option>${escapeHtml(r)}</option>`).join('');
+  if(rs.includes(cur))sel.value=cur;}
+function mgTogglePreview(on){if(!mgCur)return;mgPrevOn=on;if(on)mgPrevAnswers={};renderManage();}
+function mgLinkHelp(qid){const q=mgCur.questions.find(x=>x.id===qid);if(!q||!q.link)return;
+  drawer(q.link,(mgCur.links||{})[q.link]||'');}
+function mgRoleHelpPrev(){const r=document.getElementById('mgPrevRoleSel').value;
+  drawer(r,(mgCur.roleHelp||{})[r]||`本區由「${r}」填答。`);}
+function pickPrev(qid,val){mgPrevAnswers[qid]=val;renderMgPreview();}
+function setCellPrev(qid,ri,key,val){mgPrevAnswers[qid]=mgPrevAnswers[qid]||{};mgPrevAnswers[qid][ri]=mgPrevAnswers[qid][ri]||{};
+  if(val==='')delete mgPrevAnswers[qid][ri][key];else mgPrevAnswers[qid][ri][key]=val;
+  const q=mgCur.questions.find(x=>x.id===qid);
+  if(key===q.stopCol&&q.stopValues.includes(val))q.columns.forEach(c=>{if(c.key!==q.stopCol)delete mgPrevAnswers[qid][ri][c.key];});
+  renderMgPreview();}
+function renderMgPreview(){
+  const role=document.getElementById('mgPrevRoleSel').value||'';
+  const qs=mgCur.questions,ans=mgPrevAnswers,vis=calcVisible(qs,role,ans);
+  Object.keys(ans).forEach(id=>{const q=qs.find(x=>x.id===id);if(!q){delete ans[id];return;}
+    if(q.role===role&&!vis.find(v=>v.id===id))delete ans[id];});
+  let html=`<div class="fsec-h"><div><div class="dl">問卷區塊（預覽）</div><div class="dt">${escapeHtml(role)}</div></div>
+    <span class="qhelp" onclick="mgRoleHelpPrev()">?</span></div>`;
+  vis.forEach(q=>{
+    if(q.type==='table'){html+=renderTablePrev(q);return;}
+    const dis=isDisabledQ(q,ans);
+    let t=escapeHtml(q.text);
+    if(q.link){const term=escapeHtml(q.link);t=t.replace(term,`<span class="qlink" onclick="mgLinkHelp('${q.id}')">${term}</span>`);}
+    html+=`<div class="q ${dis?'disabled':''}"><div class="qt"><span class="num">${escapeHtml(q.id)}</span><span>${t}</span></div><div class="opts">`;
+    (q.options||[]).forEach(o=>{html+=`<div class="opt ${ans[q.id]===o?'sel':''}" ${dis?'':`onclick="pickPrev('${q.id}',this.textContent)"`}>${escapeHtml(o)}</div>`;});
+    html+=`</div>${dis?'<div class="dis-note">依前題作答，此題免填</div>':`<div class="cat">分類　${escapeHtml(q.category)}${q.optional?'　·　（選填）':''}</div>`}</div>`;});
+  document.getElementById('mgPrevBody').innerHTML=html;
+}
+function renderTablePrev(q){
+  const A=mgPrevAnswers[q.id]||{};
+  let html=`<div class="q"><div class="qt"><span class="num">${escapeHtml(q.id)}</span><span>${escapeHtml(q.text)}</span></div><div class="gt"><table class="grid"><tr><th>項目</th>`;
+  q.columns.forEach(c=>html+=`<th>${escapeHtml(c.label)}</th>`);html+=`</tr>`;
+  q.rows.forEach((rw,ri)=>{const row=A[ri]||{},stopped=q.stopValues.includes(row[q.stopCol]);
+    html+=`<tr><td class="lab">${escapeHtml(rw)}</td>`;
+    q.columns.forEach(c=>{const off=(c.key!==q.stopCol)&&stopped;html+=`<td class="${off?'off':''}">`;
+      if(c.type==='select')html+=`<select class="cellsel" ${off?'disabled':''} onchange="setCellPrev('${q.id}',${ri},'${c.key}',this.value)"><option value="">—</option>${c.options.map(o=>`<option ${row[c.key]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+      else html+=`<input class="cellin" ${off?'disabled':''} type="text" value="${row[c.key]?escapeHtml(row[c.key]):''}" placeholder="${off?'免填':''}" onchange="setCellPrev('${q.id}',${ri},'${c.key}',this.value)">`;
+      html+=`</td>`;});
+    html+=`</tr>`;});
+  if(q.sumCols&&q.sumCols.length){html+=`<tr class="sumrow"><td class="lab">總計</td>`;
+    q.columns.forEach(c=>{if(q.sumCols.includes(c.key)){let s=0;
+      q.rows.forEach((rw,ri)=>{const r=A[ri];if(!r)return;if(q.stopValues.includes(r[q.stopCol]))return;
+        const v=parseFloat(String(r[c.key]??'').replace(/,/g,''));if(!isNaN(v))s+=v;});
+      html+=`<td>${s.toLocaleString()}</td>`;}else html+=`<td></td>`;});
+    html+=`</tr>`;}
+  html+=`</table></div><div class="cat">分類　${escapeHtml(q.category)}</div></div>`;
+  return html;
+}
+function gotoManageDraft(id){closeModal();tab('manage');mgOpen(id);}
 
 loadState();
 document.getElementById('coSel').innerHTML=COMPANIES.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
