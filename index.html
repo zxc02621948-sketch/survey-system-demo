@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>企業問卷系統 — 概念原型</title>
+<style>
+  :root{--bg:#f6f6f4;--panel:#fff;--ink:#191d21;--sub:#63696f;--faint:#949a9f;--line:#e2e2de;--line2:#eceae5;
+    --accent:#14603f;--accent-ink:#0e4a30;--accent-2:#8a6d3b;--danger:#9a4b34;--disabled:#f2f2ef;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI","Helvetica Neue","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:36px 28px 100px}
+  .demo-note{font-size:13px;color:var(--faint);border:1px solid var(--line);background:var(--panel);padding:8px 13px;margin-bottom:28px}
+  .kicker{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1{font-size:27px;font-weight:600;margin:7px 0 0}
+  .lede{color:var(--sub);font-size:15.5px;max-width:680px;margin:11px 0 26px}
+  .rule{height:1px;background:var(--line);margin:0 0 22px}
+  .tabs{display:flex;gap:28px;border-bottom:1px solid var(--line);margin-bottom:26px;flex-wrap:wrap}
+  .tab{padding:0 1px 13px;font-size:15.5px;color:var(--sub);cursor:pointer;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+  .tab:hover{color:var(--ink)}
+  .panel{background:var(--panel);border:1px solid var(--line);padding:24px 26px;margin-bottom:16px}
+  .sec-t{font-size:14px;font-weight:700;margin:0 0 5px}
+  .sec-d{font-size:14px;color:var(--sub);margin:0 0 18px}
+  label.lbl{display:block;font-size:13px;color:var(--sub);margin-bottom:6px;font-weight:600}
+  select,input[type=text]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:0;font-size:15.5px;background:#fff;color:var(--ink);font-family:inherit}
+  select:focus,input:focus{outline:none;border-color:var(--accent)}
+  .row{display:flex;flex-wrap:wrap;gap:22px}
+  .row .field{flex:1;min-width:210px}
+  .hint{font-size:12px;color:var(--faint);font-weight:500}
+  .prog{font-size:13px;color:var(--faint);text-align:right;margin:0 2px 12px}
+  .fsec-h{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+  .fsec-h .dl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .fsec-h .dt{font-size:18px;font-weight:600}
+  .qhelp{width:21px;height:21px;border:1px solid var(--line);color:var(--sub);font-size:13px;font-weight:700;display:inline-grid;place-items:center;cursor:pointer;border-radius:50%}
+  .qhelp:hover{border-color:var(--accent);color:var(--accent)}
+  .q{padding:18px 0;border-top:1px solid var(--line2)}
+  .q.disabled{opacity:.5}
+  .qt{font-size:16.5px;font-weight:600;margin-bottom:12px;display:flex;gap:11px;align-items:baseline}
+  .qt .num{color:var(--faint);font-size:13px;font-weight:700;flex:none;min-width:34px}
+  .qlink{color:var(--accent);border-bottom:1px solid var(--accent);cursor:pointer;font-weight:600}
+  .qlink:hover{background:var(--accent);color:#fff}
+  .opts{display:flex;flex-wrap:wrap;gap:9px;margin-left:45px}
+  .opt{border:1px solid var(--line);padding:8px 17px;font-size:15px;cursor:pointer;background:#fff}
+  .opt:hover{border-color:var(--accent)}
+  .opt.sel{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .cat{font-size:12.5px;color:var(--faint);margin:11px 0 0 45px}
+  .disabled .opt{cursor:not-allowed;background:var(--disabled);color:var(--faint);border-color:var(--line2)}
+  .dis-note{font-size:12.5px;color:var(--accent-2);margin:9px 0 0 45px}
+  .gt{margin-left:45px;overflow-x:auto}
+  table.grid{border-collapse:collapse;font-size:14.5px;min-width:520px}
+  table.grid th,table.grid td{border:1px solid var(--line)}
+  table.grid th{background:#f4f5f2;font-weight:600;padding:8px 12px;text-align:left;white-space:nowrap}
+  table.grid td.lab{padding:8px 12px;font-weight:600;background:#fbfbf9;white-space:nowrap}
+  .cellsel,.cellin{width:100%;border:none;padding:8px 10px;font-size:14.5px;background:#fff;font-family:inherit;color:var(--ink)}
+  .cellsel:focus,.cellin:focus{outline:2px solid var(--accent);outline-offset:-2px}
+  td.off{background:repeating-linear-gradient(45deg,#f4f4f1,#f4f4f1 6px,#efefeb 6px,#efefeb 12px)}
+  td.off .cellsel,td.off .cellin{background:transparent;color:var(--faint);pointer-events:none}
+  .btn{background:var(--accent);color:#fff;border:none;padding:11px 22px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+  .btn:hover{background:var(--accent-ink)}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .btn.sm{padding:7px 14px;font-size:13.5px}
+  .actions{display:flex;gap:11px;flex-wrap:wrap;align-items:center}
+  .footnote{font-size:13px;color:var(--sub);margin-top:13px}
+  .badge{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border:1px solid}
+  .badge.pend{color:var(--accent);border-color:var(--accent);background:#f0f7f3}
+  .badge.done{color:var(--faint);border-color:var(--line);background:var(--disabled);text-decoration:line-through}
+  .warnbox{border:1px solid #d9c08f;background:#fdf8ec;color:#7a5c1e;font-size:13.5px;padding:12px 14px;margin-top:12px;line-height:1.7}
+  .okbox{border:1px solid #b9d4c6;background:#f0f7f3;color:var(--accent-ink);font-size:13.5px;padding:12px 14px;margin-top:12px}
+  .misslist{border:1px solid var(--line2);background:#fbfbf9;font-size:13.5px;padding:10px 14px;margin-top:8px;line-height:1.9;max-height:260px;overflow:auto}
+  code.url{font-family:Consolas,monospace;font-size:12.5px;color:var(--accent-ink);background:#f0f4f1;padding:2px 7px}
+  .filebox{border:1.5px dashed var(--line);padding:18px;text-align:center;background:#fbfbf9}
+  .filebox input{font-size:14px}
+  table.xls{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  table.xls th,table.xls td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  table.xls th{background:#f4f5f2;font-weight:600;white-space:nowrap}
+  table.xls td.cond{color:var(--accent-2)}
+  .folder{border:1px solid var(--line);margin-bottom:11px}
+  .fh{display:flex;align-items:center;gap:11px;padding:14px 17px;cursor:pointer;background:#fbfbf9}
+  .fh .fn{font-weight:600;font-size:15.5px}
+  .fh .fid{font-size:12px;color:var(--faint)}
+  .fh .count{margin-left:auto;font-size:13px;color:var(--sub)}
+  .car{color:var(--faint);font-size:13px;transition:transform .2s;display:inline-block}
+  .open .car{transform:rotate(90deg)}
+  .fbody{padding:4px 17px 16px;border-top:1px solid var(--line2)}
+  .rolegrp{margin:14px 0 0}
+  .rh{font-size:13px;letter-spacing:.05em;color:var(--accent);font-weight:700;margin:0 0 5px}
+  .catline{display:flex;font-size:14.5px;padding:6px 0;border-bottom:1px solid var(--line2)}
+  .catline .c{color:var(--sub);width:140px;flex:none}
+  .catline .v{flex:1}
+  table.exp{width:100%;border-collapse:collapse;font-size:13px;margin-top:11px}
+  table.exp th,table.exp td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+  table.exp th{background:#f4f5f2;font-weight:600}
+  .drawer-bg{position:fixed;inset:0;background:rgba(25,29,33,.25);display:none;z-index:60}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:400px;max-width:88vw;background:#fff;border-left:3px solid var(--accent);box-shadow:-12px 0 40px rgba(0,0,0,.12);transform:translateX(100%);transition:transform .28s ease;z-index:61;padding:26px;overflow:auto}
+  .drawer.show{transform:translateX(0)}
+  .drawer .dk{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .drawer h3{font-size:18px;font-weight:600;margin:8px 0 14px}
+  .drawer p{font-size:15px;color:var(--sub);line-height:1.7}
+  .drawer .x{position:absolute;top:20px;right:22px;font-size:22px;color:var(--faint);cursor:pointer;line-height:1}
+  .modal-bg{position:fixed;inset:0;background:rgba(25,29,33,.42);display:none;z-index:50;align-items:center;justify-content:center;padding:22px}
+  .modal{background:#fff;max-width:640px;width:100%;padding:26px 28px;max-height:86vh;overflow:auto;border-top:3px solid var(--accent)}
+  .modal h3{margin:0 0 11px;font-size:17px;font-weight:600}
+  .modal .mb{font-size:14.5px;color:var(--sub);line-height:1.65}
+  .modal .mb b{color:var(--ink)}
+  pre{background:#141b17;color:#d3e4da;padding:16px;overflow:auto;font-size:12.5px;line-height:1.55;max-height:340px;margin:12px 0 0}
+  .hidden{display:none}
+  @media(max-width:600px){.opts,.cat,.gt,.dis-note{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="demo-note">概念原型　題目與資料皆為模擬，用以驗證系統可行性</div>
+  <div class="kicker">問卷系統</div>
+  <h1>企業問卷 — 完整系統原型</h1>
+  <p class="lede">單一份設定檔（以 Excel／CSV 維護）貫穿全系統：填寫端（引導式體驗、多型連動、表格題、必填驗證、說明超連結）、Excel 匯入（換一份檔案即換整份問卷，匯入時自動驗證防呆）、資料端（多公司分別歸檔、依職位與分類自動整合、可匯出）、一次性填寫連結（免帳號、送出即失效）。</p>
+  <div class="rule"></div>
+  <div class="tabs">
+    <div class="tab on" id="t-fill" onclick="tab('fill')">填寫問卷</div>
+    <div class="tab" id="t-edit" onclick="tab('edit')">Excel 匯入</div>
+    <div class="tab" id="t-data" onclick="tab('data')">資料整合 ／ 匯出</div>
+    <div class="tab" id="t-links" onclick="tab('links')">一次性填寫連結</div>
+  </div>
+
+  <div id="view-fill">
+    <div class="panel">
+      <div class="row">
+        <div class="field"><label class="lbl">受評公司 <span class="hint">每家獨立歸檔</span></label><select id="coSel"></select></div>
+        <div class="field"><label class="lbl">填答人職位 <span class="hint">不同職位對應不同題目</span></label><select id="role" onchange="renderFill()"></select></div>
+      </div>
+    </div>
+    <div class="prog" id="prog"></div>
+    <div id="form"></div>
+    <div class="panel">
+      <div class="actions"><button class="btn" onclick="submitForm()">送出問卷</button></div>
+      <div class="footnote">送出後，資料自動歸入該公司資料夾、並依職位與分類整合，無需人工提取。</div>
+    </div>
+  </div>
+
+  <div id="view-edit" class="hidden">
+    <div class="panel">
+      <div class="sec-t">以 Excel 維護問卷</div>
+      <div class="sec-d">青山在 Excel 定義／修改問卷（題目、選項、分類、職位、連動規則），存成 CSV 後於此匯入，填寫端即刻更新——不需改程式、不需工程師。此原型以 CSV 示範（Excel 可直接開啟／另存 CSV）；正式版可支援 .xlsx 直接匯入。</div>
+      <div class="filebox">
+        <input type="file" accept=".csv,text/csv" onchange="onFile(event)">
+        <div class="footnote" style="margin-top:8px">選擇隨附的範例 CSV（esg／supplier／satisfaction）試試——換一份檔案就是一份全新問卷。</div>
+      </div>
+      <div class="actions" style="margin-top:14px">
+        <button class="btn ghost" onclick="downloadTemplate()">下載 Excel 範本（CSV）</button>
+        <button class="btn ghost" onclick="showConfig()">檢視設定檔（匯入後的內部結構）</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="sec-t">目前問卷內容（＝你的 Excel）</div>
+      <div class="sec-d">下表即目前生效的問卷。青山於 Excel 對應修改後匯入即可。</div>
+      <div style="overflow-x:auto"><div id="xls"></div></div>
+    </div>
+  </div>
+
+  <div id="view-data" class="hidden">
+    <div class="panel">
+      <div class="sec-t">多公司資料整合</div>
+      <div class="sec-d">每家公司獨立資料夾，內含各職位填答，已依分類自動整合。點選公司展開。</div>
+      <div id="tree" style="margin-top:14px"></div>
+      <div class="actions" style="margin-top:14px"><button class="btn ghost sm" onclick="exportAllCSV()">匯出全部公司（CSV）</button></div>
+    </div>
+    <div class="panel">
+      <div class="sec-t">自訂提取</div>
+      <div class="sec-d">依條件撈出需要的資料，可單獨匯出——會計端要什麼撈什麼，不再人工翻表整理。</div>
+      <div class="row">
+        <div class="field"><label class="lbl">公司</label><select id="exCo" onchange="applyExtract()"></select></div>
+        <div class="field"><label class="lbl">職位</label><select id="exRole" onchange="applyExtract()"></select></div>
+        <div class="field"><label class="lbl">分類</label><select id="exCat" onchange="applyExtract()"></select></div>
+        <div class="field"><label class="lbl">關鍵字（題號或答案）</label><input id="exKw" type="text" placeholder="例如：E1 或 淹水" oninput="applyExtract()"></div>
+      </div>
+      <div id="exResult" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <div id="view-links" class="hidden">
+    <div class="panel">
+      <div class="sec-t">一次性填寫連結</div>
+      <div class="sec-d">為每位填答人產生專屬連結：連結綁定「公司＋職位」，開啟即進入對應題組，送出後即失效。填答人全程不需註冊帳號——直接解決以帳號控管所帶來的授權費用與管理負擔。</div>
+      <div class="row">
+        <div class="field"><label class="lbl">公司</label><select id="linkCo"></select></div>
+        <div class="field"><label class="lbl">職位</label><select id="linkRole"></select></div>
+        <div class="field" style="flex:none;align-self:flex-end"><button class="btn" onclick="issueLink()">產生連結</button></div>
+      </div>
+      <div id="linklist" style="margin-top:18px"></div>
+      <div class="footnote">概念展示：實際系統中連結由伺服器簽發與驗證，開啟時自動對應公司與職位、送出後作廢，無法轉用或重複填寫。</div>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-bg" id="drawerBg" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer"><span class="x" onclick="closeDrawer()">×</span><div class="dk">說明</div><h3 id="dTitle"></h3><p id="dBody"></p></div>
+<div class="modal-bg" id="modalBg" onclick="if(event.target.id==='modalBg')closeModal()">
+  <div class="modal"><h3 id="mTitle"></h3><div class="mb" id="mBody"></div><div style="margin-top:16px"><button class="btn" onclick="closeModal()">關閉</button></div></div>
+</div>
+
+<script>
+let LINKS={
+ "溫室氣體盤查":"依 ISO 14064 或 GHG Protocol，系統性清點組織的溫室氣體排放來源與排放量，是碳管理的基礎。",
+ "環境敏感區":"指淹水潛勢、山崩地滑、活動斷層等易受天然災害影響的區域，可查詢國家災害防救科技中心圖資。",
+ "重大職安事故":"指造成一人以上死亡、三人以上受傷、或須依職安法通報主管機關的事故。",
+ "TCFD":"氣候相關財務揭露，揭露氣候對公司財務的風險與機會。"
+};
+let CONFIG={version:"v4",questions:[
+ {id:"E1",role:"環境部門主管",category:"碳管理",text:"是否已完成溫室氣體盤查？",options:["是","否","進行中"],link:"溫室氣體盤查"},
+ {id:"E2",role:"環境部門主管",category:"碳管理",text:"盤查範疇涵蓋至第幾類？",options:["範疇一","範疇一、二","範疇一、二、三"],showIf:{q:"E1",eq:"是"}},
+ {id:"E3",role:"環境部門主管",category:"碳管理",text:"預計何時完成盤查？",options:["一年內","一至二年","尚無規劃"],showIf:{q:"E1",eq:"否"}},
+ {id:"E4",role:"環境部門主管",category:"氣候風險",text:"廠區是否位於環境敏感區？",options:["是","否"],link:"環境敏感區"},
+ {id:"E5",role:"環境部門主管",category:"氣候風險",text:"屬於哪一類敏感區？",options:["淹水潛勢","山崩地滑","活動斷層","複數類型"],showIf:{q:"E4",eq:"是"}},
+ {id:"E6",role:"環境部門主管",category:"調適投入",text:"是否已投保或編列調適預算？",options:["是","規劃中","否"],showIf:{q:"E5",in:["淹水潛勢","山崩地滑","活動斷層","複數類型"]}},
+ {id:"E7",role:"環境部門主管",category:"資源使用",type:"table",text:"各主要廠區資源使用概況（停業廠區僅需於首格填「否」，後續欄位自動鎖定）：",columns:[{key:"op",label:"是否營運中",type:"select",options:["是","否"]},{key:"kwh",label:"年用電（度）",type:"num"},{key:"water",label:"年用水（噸）",type:"num"}],rows:["台中廠","台南廠","高雄廠"],stopCol:"op",stopValues:["否"]},
+ {id:"E8",role:"環境部門主管",category:"能源",text:"年度再生能源使用佔比？",options:["20%以上","5-20%","低於5%","無"]},
+ {id:"E9",role:"環境部門主管",category:"能源",text:"是否已設定再生能源目標年？",options:["是","否"],disableIf:{q:"E8",eq:"無"}},
+ {id:"E10",role:"環境部門主管",category:"廢棄物",text:"是否建立廢棄物分類回收機制？",options:["是","否"]},
+ {id:"S1",role:"人力資源主管",category:"勞動權益",text:"是否訂有反歧視與性騷擾防治政策？",options:["是","否"]},
+ {id:"S2",role:"人力資源主管",category:"勞動權益",text:"是否設有員工申訴管道？",options:["是","否"]},
+ {id:"S3",role:"人力資源主管",category:"多元共融",type:"table",text:"各職級女性主管概況（未設該職級者首格填「否」，後續自動免填）：",columns:[{key:"has",label:"是否設此職級",type:"select",options:["是","否"]},{key:"f",label:"女性人數",type:"num"},{key:"t",label:"總人數",type:"num"}],rows:["高階主管","中階主管","基層主管"],stopCol:"has",stopValues:["否"]},
+ {id:"S4",role:"人力資源主管",category:"人才發展",text:"去年平均每人受訓時數？",options:["20小時以上","8-20小時","低於8小時"]},
+ {id:"S5",role:"人力資源主管",category:"人才發展",text:"是否已規劃訓練提升方案？",options:["是","否"],showIf:{q:"S4",eq:"低於8小時"}},
+ {id:"S6",role:"人力資源主管",category:"職場安全",text:"去年是否發生重大職安事故？",options:["否","是"],link:"重大職安事故"},
+ {id:"S7",role:"人力資源主管",category:"職場安全",text:"是否已完成改善與通報？",options:["是","處理中","否"],showIf:{q:"S6",eq:"是"}},
+ {id:"S8",role:"人力資源主管",category:"福利措施",text:"是否提供優於法令的育嬰／照顧措施？",options:["是","否"]},
+ {id:"G1",role:"財務／治理主管",category:"董事會",text:"獨立董事席次是否達法規要求？",options:["高於下限","符合下限","未達"]},
+ {id:"G2",role:"財務／治理主管",category:"董事會",text:"是否設置審計委員會？",options:["是","否"]},
+ {id:"G3",role:"財務／治理主管",category:"誠信經營",text:"是否設有內部檢舉管道並保護檢舉人？",options:["是","否"]},
+ {id:"G4",role:"財務／治理主管",category:"誠信經營",text:"去年是否收到檢舉案件？",options:["無","有，已處理","有，處理中"],showIf:{q:"G3",eq:"是"}},
+ {id:"G6",role:"財務／治理主管",category:"資訊揭露",text:"是否建立氣候相關財務揭露？",options:["已揭露","規劃中","否"],link:"TCFD"},
+ {id:"G7",role:"財務／治理主管",category:"資訊揭露",text:"是否發布永續報告書？",options:["是","自願規劃中","否"]},
+ {id:"G8",role:"財務／治理主管",category:"資訊揭露",text:"報告書是否經第三方確信？",options:["是","否"],disableIf:{q:"G7",eq:"否"}},
+ {id:"G10",role:"財務／治理主管",category:"合規紀錄",type:"table",text:"近三年重大違規紀錄（該年度無違規者首格填「否」，後續自動免填）：",columns:[{key:"has",label:"是否有違規",type:"select",options:["是","否"]},{key:"type",label:"類型",type:"text"},{key:"amt",label:"裁罰金額（元）",type:"num"}],rows:["2023年","2024年","2025年"],stopCol:"has",stopValues:["否"]},
+]};
+const COMPANIES=[{id:"CO-0142",name:"示範科技股份有限公司"},{id:"CO-0207",name:"永昌實業股份有限公司"},{id:"CO-0315",name:"立群工程股份有限公司"}];
+let SUBMISSIONS=[
+ {company_id:"CO-0142",role:"環境部門主管",records:[{q_id:"E1",category:"碳管理",answer:"是"},{q_id:"E4",category:"氣候風險",answer:"是"},{q_id:"E5",category:"氣候風險",answer:"淹水潛勢"},{q_id:"E8",category:"能源",answer:"5-20%"}]},
+ {company_id:"CO-0207",role:"財務／治理主管",records:[{q_id:"G1",category:"董事會",answer:"高於下限"},{q_id:"G7",category:"資訊揭露",answer:"是"}]},
+];
+let answers={};
+
+function roles(){return [...new Set(CONFIG.questions.map(q=>q.role))];}
+function buildRoleSelect(){const sel=document.getElementById('role');const cur=sel.value;
+  sel.innerHTML=roles().map(r=>`<option value="${r}">${r}</option>`).join('');
+  if(roles().includes(cur))sel.value=cur;}
+function currentRole(){return document.getElementById('role').value;}
+
+function tab(name){['fill','edit','data','links'].forEach(n=>{document.getElementById('view-'+n).classList.toggle('hidden',n!==name);document.getElementById('t-'+n).classList.toggle('on',n===name);});if(name==='edit')renderImport();if(name==='data'){renderTree();renderExtract();}if(name==='links'){linkRoleOptions();renderLinks();}}
+
+function isDisabled(q){return q.disableIf&&answers[q.disableIf.q]===q.disableIf.eq;}
+function visibleQuestions(){const role=currentRole();return CONFIG.questions.filter(q=>{
+  if(q.role!==role)return false;
+  if(q.showIf){const a=answers[q.showIf.q];if(a===undefined)return false;
+    if(q.showIf.eq!==undefined&&a!==q.showIf.eq)return false;
+    if(q.showIf.in!==undefined&&!q.showIf.in.includes(a))return false;}
+  return true;});}
+function escapeHtml(s){return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function linkify(q){if(!q.link)return escapeHtml(q.text);const t=escapeHtml(q.text),term=escapeHtml(q.link);
+  return t.replace(term,`<span class="qlink" onclick="drawer('${q.link.replace(/'/g,"")}',LINKS['${q.link.replace(/'/g,"")}']||'')">${term}</span>`);}
+
+function renderFill(){
+  const role=currentRole(),vis=visibleQuestions();
+  Object.keys(answers).forEach(id=>{const q=CONFIG.questions.find(x=>x.id===id);
+    if(!q){delete answers[id];return;}
+    if(q.role===role && !vis.find(v=>v.id===id))delete answers[id];});
+  let html=`<div class="panel"><div class="fsec-h"><div><div class="dl">問卷區塊</div><div class="dt">${escapeHtml(role)}</div></div>
+    <span class="qhelp" onclick="drawer('${escapeHtml(role)}','本區由「${escapeHtml(role)}」填答。不同職位進入時，系統依設定自動顯示對應題組。')">?</span></div>`;
+  let answered=0,answerable=0;
+  vis.forEach(q=>{
+    if(q.type==='table'){html+=renderTable(q);answerable++;if(tableFilled(q))answered++;return;}
+    const dis=isDisabled(q); if(!dis){answerable++;if(answers[q.id]!==undefined)answered++;}
+    html+=`<div class="q ${dis?'disabled':''}"><div class="qt"><span class="num">${q.id}</span><span>${linkify(q)}</span></div><div class="opts">`;
+    q.options.forEach(o=>{html+=`<div class="opt ${answers[q.id]===o?'sel':''}" ${dis?'':`onclick="pick('${q.id}',this.textContent)"`}>${escapeHtml(o)}</div>`;});
+    html+=`</div>${dis?`<div class="dis-note">依前題作答，此題免填</div>`:`<div class="cat">分類　${escapeHtml(q.category)}</div>`}</div>`;
+  });
+  html+=`</div>`;
+  document.getElementById('form').innerHTML=html;
+  document.getElementById('prog').textContent=`已填 ${answered} ／ ${answerable} 項`;
+}
+function pick(qid,val){answers[qid]=val;renderFill();}
+function renderTable(q){
+  const A=answers[q.id]||{};
+  let html=`<div class="q"><div class="qt"><span class="num">${q.id}</span><span>${escapeHtml(q.text)}</span></div><div class="gt"><table class="grid"><tr><th>項目</th>`;
+  q.columns.forEach(c=>html+=`<th>${escapeHtml(c.label)}</th>`); html+=`</tr>`;
+  q.rows.forEach((rw,ri)=>{const row=A[ri]||{},stopped=q.stopValues.includes(row[q.stopCol]);
+    html+=`<tr><td class="lab">${escapeHtml(rw)}</td>`;
+    q.columns.forEach(c=>{const off=(c.key!==q.stopCol)&&stopped;html+=`<td class="${off?'off':''}">`;
+      if(c.type==='select')html+=`<select class="cellsel" ${off?'disabled':''} onchange="setCell('${q.id}',${ri},'${c.key}',this.value)"><option value="">—</option>${c.options.map(o=>`<option ${row[c.key]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+      else html+=`<input class="cellin" ${off?'disabled':''} type="text" value="${row[c.key]?escapeHtml(row[c.key]):''}" placeholder="${off?'免填':''}" onchange="setCell('${q.id}',${ri},'${c.key}',this.value)">`;
+      html+=`</td>`;});
+    html+=`</tr>`;});
+  html+=`</table></div><div class="cat">分類　${escapeHtml(q.category)}　·　Excel 式表格：首格填「否」→ 整列後續自動鎖定</div></div>`;
+  return html;
+}
+function setCell(qid,ri,key,val){answers[qid]=answers[qid]||{};answers[qid][ri]=answers[qid][ri]||{};
+  if(val==='')delete answers[qid][ri][key];else answers[qid][ri][key]=val;
+  const q=CONFIG.questions.find(x=>x.id===qid);
+  if(key===q.stopCol&&q.stopValues.includes(val))q.columns.forEach(c=>{if(c.key!==q.stopCol)delete answers[qid][ri][c.key];});
+  renderFill();}
+function tableFilled(q){const A=answers[q.id]||{};return q.rows.some((_,ri)=>A[ri]&&A[ri][q.stopCol]!==undefined);}
+
+function submitForm(){
+  const role=currentRole(),co=document.getElementById('coSel').value,vis=visibleQuestions();
+  /* 必填驗證：連動隱藏／禁填／表格鎖定的項目自動免驗 */
+  const missing=[];
+  vis.forEach(q=>{if(isDisabled(q))return;
+    if(q.type==='table'){const A=answers[q.id]||{};
+      q.rows.forEach((rw,ri)=>{const r=A[ri];
+        if(!r||r[q.stopCol]===undefined){missing.push(`${q.id}　${rw} — 「${q.columns.find(c=>c.key===q.stopCol).label}」未填`);return;}
+        if(q.stopValues.includes(r[q.stopCol]))return; /* 已觸發鎖定，後續免填 */
+        q.columns.forEach(c=>{if(c.key!==q.stopCol&&r[c.key]===undefined)missing.push(`${q.id}　${rw} — 「${c.label}」未填`);});});
+      return;}
+    if(answers[q.id]===undefined)missing.push(`${q.id}　${q.text}`);});
+  if(missing.length){
+    modal("尚有必填項目未完成",`為確保資料完整性，送出前需完成以下項目（凡因連動而隱藏、免填、鎖定者已自動排除）：
+      <div class="misslist">${missing.map(m=>escapeHtml(m)).join('<br>')}</div>`);
+    return;}
+  let records=[];
+  vis.forEach(q=>{if(isDisabled(q))return;
+    if(q.type==='table'){const A=answers[q.id]||{};q.rows.forEach((rw,ri)=>{const r=A[ri];if(r&&r[q.stopCol]!==undefined){
+      const parts=q.columns.map(c=>c.label+'：'+(r[c.key]!==undefined?r[c.key]:'—'));records.push({q_id:q.id,category:q.category,answer:rw+'〔'+parts.join('，')+'〕'});}});return;}
+    if(answers[q.id]!==undefined)records.push({q_id:q.id,category:q.category,answer:answers[q.id]});});
+  SUBMISSIONS=SUBMISSIONS.filter(s=>!(s.company_id===co&&s.role===role));
+  SUBMISSIONS.push({company_id:co,role,records});answers={};renderFill();
+  /* 對應的一次性連結即刻失效 */
+  let linkClosed=false;
+  ISSUED.forEach(l=>{if(l.co===co&&l.role===role&&!l.used){l.used=true;linkClosed=true;}});
+  const coName=COMPANIES.find(c=>c.id===co).name;
+  modal("已送出並自動歸檔",`這份「${escapeHtml(role)}」填答已通過必填驗證，存入 <b>${coName}</b> 的資料夾，並依分類整合完成。切換至「資料整合／匯出」分頁即可看到——<b>全程無人工提取</b>。${linkClosed?'<br><br>此填答對應的一次性連結<b>已自動失效</b>（見「一次性填寫連結」分頁）。':''}`);
+}
+
+/* ===== Excel(CSV)匯入 ===== */
+function onFile(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=e=>{try{applyImport(parseCSV(e.target.result));}catch(err){alert('匯入失敗：'+err.message);}};r.readAsText(f,'utf-8');}
+function parseCSV(text){
+  text=text.replace(/^﻿/,'').replace(/\r\n?/g,'\n');
+  const lines=text.split('\n').filter(l=>l.trim().length);
+  const parseLine=line=>{const out=[];let cur='',inq=false;
+    for(let i=0;i<line.length;i++){const ch=line[i];
+      if(inq){if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++;}else inq=false;}else cur+=ch;}
+      else{if(ch==='"')inq=true;else if(ch===','){out.push(cur);cur='';}else cur+=ch;}}
+    out.push(cur);return out;};
+  const rows=lines.map(parseLine),header=rows[0].map(h=>h.trim());
+  return rows.slice(1).map(r=>{const o={};header.forEach((h,i)=>o[h]=(r[i]||'').trim());return o;});
+}
+function applyImport(objs){
+  const qs=[],links={};
+  objs.forEach(o=>{
+    if(!o['題號']||!o['題目'])return;
+    const type=(o['題型']||'單選').trim();
+    if(type==='表格'){
+      const cols=(o['選項']||'').split('｜').map(s=>s.trim()).filter(Boolean).map(def=>{
+        const p=def.split(':'),c={key:p[0],label:p[0],type:(p[1]||'text').trim()};
+        if(c.type==='select')c.options=(p[2]||'').split('/').map(x=>x.trim()).filter(Boolean);
+        return c;});
+      qs.push({id:o['題號'],role:o['職位']||'填答人',category:o['分類']||'未分類',text:o['題目'],type:'table',
+        columns:cols,rows:(o['表格列']||'').split('｜').map(s=>s.trim()).filter(Boolean),
+        stopCol:(o['停止欄']||(cols[0]&&cols[0].key)),stopValues:(o['停止值']||'').split('/').map(s=>s.trim()).filter(Boolean)});
+      return;
+    }
+    const q={id:o['題號'],role:o['職位']||'填答人',category:o['分類']||'未分類',text:o['題目'],options:(o['選項']||'').split('｜').map(s=>s.trim()).filter(Boolean)};
+    if(o['超連結詞']){q.link=o['超連結詞'];links[o['超連結詞']]=o['超連結說明']||'';}
+    const lt=o['連動類型'];
+    if(lt==='顯示'&&o['連動題號'])q.showIf={q:o['連動題號'],eq:o['連動值']};
+    if(lt==='禁填'&&o['連動題號'])q.disableIf={q:o['連動題號'],eq:o['連動值']};
+    qs.push(q);
+  });
+  if(!qs.length){alert('沒有讀到有效題目，請確認 CSV 標題列與內容');return;}
+  /* ── 匯入驗證（防呆）：抓出 Excel 裡的設定錯誤，先報告再套用 ── */
+  const warns=[];
+  const skipped=objs.filter(o=>!o['題號']||!o['題目']).length;
+  if(skipped)warns.push(`${skipped} 列因缺「題號」或「題目」被略過`);
+  const seen=new Set(),dedup=[];
+  qs.forEach(q=>{if(seen.has(q.id)){warns.push(`題號「${q.id}」重複——僅保留第一筆，後者已忽略`);return;}seen.add(q.id);dedup.push(q);});
+  dedup.forEach(q=>{
+    if(q.type==='table'){
+      if(!q.columns.length)warns.push(`${q.id}（表格）沒有讀到任何欄位定義`);
+      if(!q.rows.length)warns.push(`${q.id}（表格）缺「表格列」`);
+      if(q.stopCol&&q.columns.length&&!q.columns.find(c=>c.key===q.stopCol))warns.push(`${q.id}（表格）的停止欄「${q.stopCol}」不在欄位清單中`);
+      if(!q.stopValues.length)warns.push(`${q.id}（表格）缺「停止值」，鎖定連動將不會生效`);
+      return;}
+    if(!q.options.length)warns.push(`${q.id} 沒有讀到任何選項`);
+    [['showIf','顯示'],['disableIf','禁填']].forEach(([k,name])=>{
+      const r=q[k];if(!r)return;
+      const t=dedup.find(x=>x.id===r.q);
+      if(!t){warns.push(`${q.id} 的${name}連動指向「${r.q}」——此題號不存在，連動將永遠不生效`);return;}
+      if(t.type==='table'){warns.push(`${q.id} 的${name}連動指向表格題「${r.q}」，不支援`);return;}
+      if(r.eq!==undefined&&!t.options.includes(r.eq))warns.push(`${q.id} 的${name}連動值「${r.eq}」不在 ${r.q} 的選項（${t.options.join('／')}）中，連動將永遠不生效`);
+      if(t.role!==q.role)warns.push(`${q.id}（${q.role}）連動到不同職位的 ${r.q}（${t.role}）——填答人看不到觸發題`);});
+  });
+  CONFIG.questions=dedup;LINKS={};Object.assign(LINKS,links);answers={};buildRoleSelect();renderFill();renderImport();
+  const nShow=dedup.filter(q=>q.showIf).length,nDis=dedup.filter(q=>q.disableIf).length,nTab=dedup.filter(q=>q.type==='table').length,nLink=Object.keys(links).length;
+  const verdict=warns.length
+    ?`<div class="warnbox"><b>驗證發現 ${warns.length} 個問題</b>（已套用可用部分，建議回 Excel 修正後重新匯入）：<br>${warns.map(w=>'・'+escapeHtml(w)).join('<br>')}</div>`
+    :`<div class="okbox"><b>驗證通過</b>——未發現重複題號、斷鏈連動、無效連動值或表格缺漏。</div>`;
+  modal("匯入完成 · 讀取結果",
+    `<b>${dedup.length}</b> 題　·　${roles().length} 種職位（${roles().join('、')}）<br><br>
+     讀取到的連動與功能：<br>
+     ・顯示連動 <b>${nShow}</b> 個<br>
+     ・禁填連動 <b>${nDis}</b> 個<br>
+     ・表格題 <b>${nTab}</b> 個<br>
+     ・超連結說明 <b>${nLink}</b> 個
+     ${verdict}
+     <br>可在下方「目前問卷內容」表格逐列核對，或切至「填寫問卷」實際操作。整套只是換一份 Excel，程式完全沒動。`);
+}
+function renderImport(){
+  let h=`<table class="xls"><tr><th>題號</th><th>職位</th><th>分類</th><th>題目</th><th>選項</th><th>連動規則</th></tr>`;
+  CONFIG.questions.forEach(q=>{
+    let cond='—';
+    if(q.type==='table')cond=`表格：首格「${q.stopValues.join('／')}」→鎖定後續`;
+    else if(q.showIf)cond=`顯示：${q.showIf.q} ＝ ${q.showIf.eq!==undefined?q.showIf.eq:(q.showIf.in||[]).join('／')}`;
+    else if(q.disableIf)cond=`禁填：${q.disableIf.q} ＝ ${q.disableIf.eq}`;
+    const opts=q.type==='table'?'（表格欄位）':(q.options||[]).join('｜');
+    h+=`<tr><td>${q.id}</td><td>${escapeHtml(q.role)}</td><td>${escapeHtml(q.category)}</td><td>${escapeHtml(q.text)}</td><td>${escapeHtml(opts)}</td><td class="cond">${escapeHtml(cond)}</td></tr>`;
+  });
+  h+=`</table>`; document.getElementById('xls').innerHTML=h;
+}
+
+function renderTree(){
+  let html="";
+  COMPANIES.forEach(co=>{const subs=SUBMISSIONS.filter(s=>s.company_id===co.id),total=subs.reduce((n,s)=>n+s.records.length,0),open=co.id==='CO-0142';
+    html+=`<div class="folder ${open?'open':''}"><div class="fh" onclick="this.parentNode.classList.toggle('open');this.nextElementSibling.classList.toggle('hidden')"><span class="car">›</span><span class="fn">${co.name}</span><span class="fid">${co.id}</span><span class="count">${subs.length} 位填答 · ${total} 筆</span></div><div class="fbody ${open?'':'hidden'}">`;
+    if(!subs.length)html+=`<div class="footnote">尚無填答</div>`;
+    subs.forEach(s=>{html+=`<div class="rolegrp"><div class="rh">${escapeHtml(s.role)}</div>`;
+      const byCat={};s.records.forEach(r=>{(byCat[r.category]=byCat[r.category]||[]).push(r.answer);});
+      Object.entries(byCat).forEach(([c,v])=>{html+=`<div class="catline"><span class="c">${escapeHtml(c)}</span><span class="v">${escapeHtml(v.join('、'))}</span></div>`;});
+      html+=`</div>`;});
+    if(subs.length)html+=`<div style="margin-top:14px"><button class="btn sm" onclick="event.stopPropagation();exportCSV('${co.id}')">匯出此公司整合資料（CSV）</button></div>`;
+    html+=`</div></div>`;});
+  document.getElementById('tree').innerHTML=html;
+}
+function exportCSV(coId){const co=COMPANIES.find(c=>c.id===coId),subs=SUBMISSIONS.filter(s=>s.company_id===coId);
+  let rows=[["公司","公司ID","填答職位","題號","分類","答案","版本"]];
+  subs.forEach(s=>s.records.forEach(r=>rows.push([co.name,coId,s.role,r.q_id,r.category,r.answer,CONFIG.version])));
+  const csv="﻿"+rows.map(r=>r.map(c=>`"${(''+c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=`${co.name}_整合資料.csv`;a.click();
+  let tb='<table class="exp"><tr>'+rows[0].map(h=>`<th>${h}</th>`).join('')+'</tr>';
+  rows.slice(1).forEach(r=>{tb+='<tr>'+r.map(c=>`<td>${escapeHtml(c)}</td>`).join('')+'</tr>';});tb+='</table>';
+  modal("已匯出　"+co.name,`CSV 已下載。整合後資料如下，每筆自動帶公司、職位、分類：${tb}`);
+}
+function drawer(t,b){document.getElementById('dTitle').textContent=t;document.getElementById('dBody').textContent=b;document.getElementById('drawer').classList.add('show');document.getElementById('drawerBg').style.display='block';}
+function closeDrawer(){document.getElementById('drawer').classList.remove('show');document.getElementById('drawerBg').style.display='none';}
+function showConfig(){modal("設定檔（匯入後的內部結構）",`CSV 匯入後轉成此設定檔驅動整個系統：<pre>${escapeHtml(JSON.stringify(CONFIG,null,2))}</pre>`);}
+function modal(t,b){document.getElementById('mTitle').textContent=t;document.getElementById('mBody').innerHTML=b;document.getElementById('modalBg').style.display='flex';}
+function closeModal(){document.getElementById('modalBg').style.display='none';}
+
+/* ===== 自訂提取 ===== */
+function extractRows(){
+  const co=document.getElementById('exCo').value,role=document.getElementById('exRole').value,
+        cat=document.getElementById('exCat').value,kw=document.getElementById('exKw').value.trim();
+  const rows=[];
+  COMPANIES.forEach(c=>{if(co!=='全部'&&c.id!==co)return;
+    SUBMISSIONS.filter(s=>s.company_id===c.id).forEach(s=>{if(role!=='全部'&&s.role!==role)return;
+      s.records.forEach(r=>{if(cat!=='全部'&&r.category!==cat)return;
+        if(kw&&!(r.q_id.includes(kw)||(''+r.answer).includes(kw)))return;
+        rows.push([c.name,c.id,s.role,r.q_id,r.category,r.answer]);});});});
+  return rows;
+}
+function renderExtract(){
+  const roleSet=new Set(),catSet=new Set();
+  SUBMISSIONS.forEach(s=>{roleSet.add(s.role);s.records.forEach(r=>catSet.add(r.category));});
+  const keep=(id)=>{const el=document.getElementById(id);return el?el.value:'全部';};
+  const kCo=keep('exCo'),kRole=keep('exRole'),kCat=keep('exCat');
+  document.getElementById('exCo').innerHTML=['全部',...COMPANIES.map(c=>c.id)].map(v=>{
+    const label=v==='全部'?'全部':COMPANIES.find(c=>c.id===v).name;
+    return `<option value="${v}" ${v===kCo?'selected':''}>${label}</option>`;}).join('');
+  document.getElementById('exRole').innerHTML=['全部',...roleSet].map(v=>`<option ${v===kRole?'selected':''}>${escapeHtml(v)}</option>`).join('');
+  document.getElementById('exCat').innerHTML=['全部',...catSet].map(v=>`<option ${v===kCat?'selected':''}>${escapeHtml(v)}</option>`).join('');
+  applyExtract();
+}
+function applyExtract(){
+  const rows=extractRows(),box=document.getElementById('exResult');
+  if(!rows.length){box.innerHTML='<div class="footnote">無符合條件的資料</div>';return;}
+  let h=`<div class="footnote" style="margin:0 0 6px">符合條件　<b>${rows.length}</b> 筆</div>
+    <table class="exp"><tr><th>公司</th><th>職位</th><th>題號</th><th>分類</th><th>答案</th></tr>`;
+  rows.forEach(r=>{h+=`<tr><td>${escapeHtml(r[0])}</td><td>${escapeHtml(r[2])}</td><td>${r[3]}</td><td>${escapeHtml(r[4])}</td><td>${escapeHtml(r[5])}</td></tr>`;});
+  h+=`</table><div class="actions" style="margin-top:12px"><button class="btn sm" onclick="exportExtract()">匯出篩選結果（CSV）</button></div>`;
+  box.innerHTML=h;
+}
+function exportExtract(){
+  const rows=extractRows();
+  if(!rows.length)return;
+  const all=[["公司","公司ID","填答職位","題號","分類","答案"],...rows];
+  const csv="﻿"+all.map(r=>r.map(c=>`"${(''+c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=`提取結果.csv`;a.click();
+  modal("已匯出篩選結果",`共 <b>${rows.length}</b> 筆，僅包含目前篩選條件下的資料。`);
+}
+
+/* ===== 一次性填寫連結 ===== */
+let ISSUED=[
+ {co:"CO-0142",role:"環境部門主管",token:"k3f9q2x8w1",used:true},
+ {co:"CO-0315",role:"環境部門主管",token:"m7d2p5r9t4",used:false},
+];
+function linkRoleOptions(){
+  document.getElementById('linkCo').innerHTML=COMPANIES.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('linkRole').innerHTML=roles().map(r=>`<option>${escapeHtml(r)}</option>`).join('');
+}
+function issueLink(){
+  const co=document.getElementById('linkCo').value,role=document.getElementById('linkRole').value;
+  if(ISSUED.find(l=>l.co===co&&l.role===role&&!l.used)){modal("已有未使用的連結",`${COMPANIES.find(c=>c.id===co).name}／${escapeHtml(role)} 已有一條未使用的連結——同一填答人同時只會有一條有效連結，避免重複填寫。`);return;}
+  const token=Math.random().toString(36).slice(2,12);
+  ISSUED.push({co,role,token,used:false});renderLinks();
+}
+function renderLinks(){
+  if(!ISSUED.length){document.getElementById('linklist').innerHTML='<div class="footnote">尚未產生任何連結</div>';return;}
+  let h='<table class="exp"><tr><th>公司</th><th>職位</th><th>專屬連結</th><th>狀態</th><th></th></tr>';
+  ISSUED.forEach((l,i)=>{
+    const co=COMPANIES.find(c=>c.id===l.co);
+    h+=`<tr><td>${co?co.name:l.co}</td><td>${escapeHtml(l.role)}</td>
+      <td><code class="url">https://survey.example.com/f/${l.token}</code></td>
+      <td><span class="badge ${l.used?'done':'pend'}">${l.used?'已完成 · 連結失效':'未使用'}</span></td>
+      <td>${l.used?'':`<button class="btn ghost sm" onclick="copyLink(${i})">複製</button>`}</td></tr>`;
+  });
+  h+='</table>';
+  document.getElementById('linklist').innerHTML=h;
+}
+function copyLink(i){
+  const url='https://survey.example.com/f/'+ISSUED[i].token;
+  try{navigator.clipboard.writeText(url);modal("已複製連結",`<code class="url">${url}</code><br><br>實際系統中，這條連結以 Email 或訊息寄給填答人；開啟即進入對應公司與職位的題組，送出後連結作廢。`);}
+  catch(e){modal("連結",`<code class="url">${url}</code>`);}
+}
+/* ===== 匯出全部公司 ===== */
+function exportAllCSV(){
+  let rows=[["公司","公司ID","填答職位","題號","分類","答案","版本"]];
+  COMPANIES.forEach(co=>{SUBMISSIONS.filter(s=>s.company_id===co.id).forEach(s=>s.records.forEach(r=>rows.push([co.name,co.id,s.role,r.q_id,r.category,r.answer,CONFIG.version])));});
+  if(rows.length===1){modal("尚無資料","目前沒有任何已送出的填答可匯出。");return;}
+  const csv="﻿"+rows.map(r=>r.map(c=>`"${(''+c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=`全部公司_整合資料.csv`;a.click();
+  modal("已匯出全部公司",`共 <b>${rows.length-1}</b> 筆資料、涵蓋 ${new Set(rows.slice(1).map(r=>r[0])).size} 家公司。每筆自動帶公司、職位、分類——會計端可直接以樞紐分析或匯入系統使用。`);
+}
+/* ===== 下載 Excel 範本 ===== */
+function downloadTemplate(){
+  const rows=[
+   ["題號","題型","職位","分類","題目","選項","連動類型","連動題號","連動值","超連結詞","超連結說明","表格列","停止欄","停止值"],
+   ["Q1","單選","環境主管","碳管理","是否已完成溫室氣體盤查？","是｜否｜進行中","無","","","溫室氣體盤查","依 ISO 14064 系統性清點組織的溫室氣體排放。","","",""],
+   ["Q2","單選","環境主管","碳管理","盤查範疇涵蓋至第幾類？","範疇一｜範疇一、二｜範疇一、二、三","顯示","Q1","是","","","","",""],
+   ["Q3","單選","環境主管","能源","是否已設定再生能源目標年？","是｜否","禁填","Q1","否","","","","",""],
+   ["Q4","表格","環境主管","資源使用","各廠區資源使用（停業廠區首格填否）","是否營運中:select:是/否｜年用電度:num｜年用水噸:num","","","","","","台中廠｜台南廠","是否營運中","否"],
+  ];
+  const csv="﻿"+rows.map(r=>r.map(c=>`"${(''+c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=`問卷設定範本.csv`;a.click();
+  modal("範本已下載",`用 Excel 開啟「問卷設定範本.csv」，照欄位規則增修題目後存檔，回到此頁匯入即可。範本內含四種示範：一般單選、顯示連動、禁填連動、Excel 式表格（含鎖定）。`);
+}
+
+document.getElementById('coSel').innerHTML=COMPANIES.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+buildRoleSelect();renderFill();
+</script>
+</body>
+</html>
