@@ -54,6 +54,7 @@
   table.grid td.lab{padding:8px 12px;font-weight:600;background:#fbfbf9;white-space:nowrap}
   .cellsel,.cellin{width:100%;border:none;padding:8px 10px;font-size:14.5px;background:#fff;font-family:inherit;color:var(--ink)}
   .cellsel:focus,.cellin:focus{outline:2px solid var(--accent);outline-offset:-2px}
+  tr.sumrow td{background:#f0f4f1;font-weight:600;padding:8px 10px;color:var(--accent-ink)}
   td.off{background:repeating-linear-gradient(45deg,#f4f4f1,#f4f4f1 6px,#efefeb 6px,#efefeb 12px)}
   td.off .cellsel,td.off .cellin{background:transparent;color:var(--faint);pointer-events:none}
   .btn{background:var(--accent);color:#fff;border:none;padding:11px 22px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -217,7 +218,7 @@ let CONFIG={version:"v4",questions:[
  {id:"E4",role:"環境部門主管",category:"氣候風險",text:"廠區是否位於環境敏感區？",options:["是","否"],link:"環境敏感區"},
  {id:"E5",role:"環境部門主管",category:"氣候風險",text:"屬於哪一類敏感區？",options:["淹水潛勢","山崩地滑","活動斷層","複數類型"],showIf:{q:"E4",eq:"是"}},
  {id:"E6",role:"環境部門主管",category:"調適投入",text:"是否已投保或編列調適預算？",options:["是","規劃中","否"],showIf:{q:"E5",in:["淹水潛勢","山崩地滑","活動斷層","複數類型"]}},
- {id:"E7",role:"環境部門主管",category:"資源使用",type:"table",text:"各主要廠區資源使用概況（停業廠區僅需於首格填「否」，後續欄位自動鎖定）：",columns:[{key:"op",label:"是否營運中",type:"select",options:["是","否"]},{key:"kwh",label:"年用電（度）",type:"num"},{key:"water",label:"年用水（噸）",type:"num"}],rows:["台中廠","台南廠","高雄廠"],stopCol:"op",stopValues:["否"]},
+ {id:"E7",role:"環境部門主管",category:"資源使用",type:"table",text:"各主要廠區資源使用概況（停業廠區僅需於首格填「否」，後續欄位自動鎖定）：",columns:[{key:"op",label:"是否營運中",type:"select",options:["是","否"]},{key:"kwh",label:"年用電（度）",type:"num"},{key:"water",label:"年用水（噸）",type:"num"}],rows:["台中廠","台南廠","高雄廠"],stopCol:"op",stopValues:["否"],sumCols:["kwh","water"]},
  {id:"E8",role:"環境部門主管",category:"能源",text:"年度再生能源使用佔比？",options:["20%以上","5-20%","低於5%","無"]},
  {id:"E9",role:"環境部門主管",category:"能源",text:"是否已設定再生能源目標年？",options:["是","否"],disableIf:{q:"E8",eq:"無"}},
  {id:"E10",role:"環境部門主管",category:"廢棄物",text:"是否建立廢棄物分類回收機制？",options:["是","否"]},
@@ -244,6 +245,14 @@ let SUBMISSIONS=[
  {company_id:"CO-0207",role:"財務／治理主管",records:[{q_id:"G1",category:"董事會",answer:"高於下限"},{q_id:"G7",category:"資訊揭露",answer:"是"}]},
 ];
 let answers={};
+/* 區塊說明（職位 → 說明文字）：可由 Excel「職位說明」列匯入自訂 */
+let ROLEHELP={
+ "環境部門主管":"環境構面：評估公司於氣候風險、能源、資源使用與供應鏈的環境作為。由環境部門主管填答。",
+ "人力資源主管":"社會構面：評估勞動權益、人才發展、職場安全與福利措施。由人力資源主管填答。",
+ "財務／治理主管":"治理構面：評估董事會結構、誠信經營與資訊揭露。由財務／治理主管填答。",
+};
+function showRoleHelp(){const r=currentRole();
+ drawer(r, ROLEHELP[r] || `本區由「${r}」填答。不同職位進入時，系統依設定自動顯示對應題組。`);}
 
 function roles(){return [...new Set(CONFIG.questions.map(q=>q.role))];}
 function buildRoleSelect(){const sel=document.getElementById('role');const cur=sel.value;
@@ -276,7 +285,7 @@ function renderFill(){
     if(!q){delete answers[id];return;}
     if(q.role===role && !vis.find(v=>v.id===id))delete answers[id];});
   let html=`<div class="panel"><div class="fsec-h"><div><div class="dl">問卷區塊</div><div class="dt">${escapeHtml(role)}</div></div>
-    <span class="qhelp" onclick="drawer('${escapeHtml(role)}','本區由「${escapeHtml(role)}」填答。不同職位進入時，系統依設定自動顯示對應題組。')">?</span></div>`;
+    <span class="qhelp" onclick="showRoleHelp()">?</span></div>`;
   let answered=0,answerable=0;
   vis.forEach(q=>{
     if(q.type==='table'){html+=renderTable(q);answerable++;if(tableFilled(q))answered++;return;}
@@ -301,7 +310,23 @@ function renderTable(q){
       else html+=`<input class="cellin" ${off?'disabled':''} type="text" value="${row[c.key]?escapeHtml(row[c.key]):''}" placeholder="${off?'免填':''}" onchange="setCell('${q.id}',${ri},'${c.key}',this.value)">`;
       html+=`</td>`;});
     html+=`</tr>`;});
-  html+=`</table></div><div class="cat">分類　${escapeHtml(q.category)}　·　Excel 式表格：首格填「否」→ 整列後續自動鎖定</div></div>`;
+  /* 自動加總列：即時計算，鎖定（停業/免填）的列自動排除 */
+  if(q.sumCols&&q.sumCols.length){
+    html+=`<tr class="sumrow"><td class="lab">總計</td>`;
+    q.columns.forEach(c=>{
+      if(q.sumCols.includes(c.key)){
+        let s=0;
+        q.rows.forEach((rw,ri)=>{const r=A[ri];if(!r)return;
+          if(q.stopValues.includes(r[q.stopCol]))return;
+          const v=parseFloat(String(r[c.key]??'').replace(/,/g,''));if(!isNaN(v))s+=v;});
+        html+=`<td>${s.toLocaleString()}</td>`;
+      }else html+=`<td></td>`;
+    });
+    html+=`</tr>`;
+  }
+  const sumNote=q.sumCols&&q.sumCols.length
+    ?`　·　自動加總：${q.sumCols.map(k=>escapeHtml((q.columns.find(c=>c.key===k)||{}).label||k)).join('、')}`:'';
+  html+=`</table></div><div class="cat">分類　${escapeHtml(q.category)}　·　Excel 式表格：首格填「否」→ 整列後續自動鎖定${sumNote}</div></div>`;
   return html;
 }
 function setCell(qid,ri,key,val){answers[qid]=answers[qid]||{};answers[qid][ri]=answers[qid][ri]||{};
@@ -361,10 +386,14 @@ function parseCSV(text){
   return rows.slice(1).map(r=>{const o={};header.forEach((h,i)=>o[h]=(r[i]||'').trim());return o;});
 }
 function applyImport(objs){
-  const qs=[],links={};
+  const qs=[],links={},roleHelp={};
   objs.forEach(o=>{
-    if(!o['題號']||!o['題目'])return;
     const type=(o['題型']||'單選').trim();
+    if(type==='職位說明'){ /* 區塊說明列：職位 + 說明文字（題目欄），不需題號 */
+      if(o['職位']&&o['題目'])roleHelp[o['職位']]=o['題目'];
+      return;
+    }
+    if(!o['題號']||!o['題目'])return;
     if(type==='表格'){
       const cols=(o['選項']||'').split('｜').map(s=>s.trim()).filter(Boolean).map(def=>{
         const p=def.split(':'),c={key:p[0],label:p[0],type:(p[1]||'text').trim()};
@@ -372,7 +401,8 @@ function applyImport(objs){
         return c;});
       qs.push({id:o['題號'],role:o['職位']||'填答人',category:o['分類']||'未分類',text:o['題目'],type:'table',
         columns:cols,rows:(o['表格列']||'').split('｜').map(s=>s.trim()).filter(Boolean),
-        stopCol:(o['停止欄']||(cols[0]&&cols[0].key)),stopValues:(o['停止值']||'').split('/').map(s=>s.trim()).filter(Boolean)});
+        stopCol:(o['停止欄']||(cols[0]&&cols[0].key)),stopValues:(o['停止值']||'').split('/').map(s=>s.trim()).filter(Boolean),
+        sumCols:(o['加總欄']||'').split('/').map(s=>s.trim()).filter(Boolean)});
       return;
     }
     const q={id:o['題號'],role:o['職位']||'填答人',category:o['分類']||'未分類',text:o['題目'],options:(o['選項']||'').split('｜').map(s=>s.trim()).filter(Boolean)};
@@ -385,7 +415,7 @@ function applyImport(objs){
   if(!qs.length){alert('沒有讀到有效題目，請確認 CSV 標題列與內容');return;}
   /* ── 匯入驗證（防呆）：抓出 Excel 裡的設定錯誤，先報告再套用 ── */
   const warns=[];
-  const skipped=objs.filter(o=>!o['題號']||!o['題目']).length;
+  const skipped=objs.filter(o=>((o['題型']||'單選').trim()!=='職位說明')&&(!o['題號']||!o['題目'])).length;
   if(skipped)warns.push(`${skipped} 列因缺「題號」或「題目」被略過`);
   const seen=new Set(),dedup=[];
   qs.forEach(q=>{if(seen.has(q.id)){warns.push(`題號「${q.id}」重複——僅保留第一筆，後者已忽略`);return;}seen.add(q.id);dedup.push(q);});
@@ -395,6 +425,11 @@ function applyImport(objs){
       if(!q.rows.length)warns.push(`${q.id}（表格）缺「表格列」`);
       if(q.stopCol&&q.columns.length&&!q.columns.find(c=>c.key===q.stopCol))warns.push(`${q.id}（表格）的停止欄「${q.stopCol}」不在欄位清單中`);
       if(!q.stopValues.length)warns.push(`${q.id}（表格）缺「停止值」，鎖定連動將不會生效`);
+      (q.sumCols||[]).forEach(k=>{
+        const col=q.columns.find(c=>c.key===k);
+        if(!col)warns.push(`${q.id} 的加總欄「${k}」不在欄位清單中，將不會加總`);
+        else if(col.type!=='num')warns.push(`${q.id} 的加總欄「${k}」不是數字欄位（:num），加總結果可能不正確`);
+      });
       return;}
     if(!q.options.length)warns.push(`${q.id} 沒有讀到任何選項`);
     [['showIf','顯示'],['disableIf','禁填']].forEach(([k,name])=>{
@@ -405,8 +440,11 @@ function applyImport(objs){
       if(r.eq!==undefined&&!t.options.includes(r.eq))warns.push(`${q.id} 的${name}連動值「${r.eq}」不在 ${r.q} 的選項（${t.options.join('／')}）中，連動將永遠不生效`);
       if(t.role!==q.role)warns.push(`${q.id}（${q.role}）連動到不同職位的 ${r.q}（${t.role}）——填答人看不到觸發題`);});
   });
-  CONFIG.questions=dedup;LINKS={};Object.assign(LINKS,links);answers={};buildRoleSelect();renderFill();renderImport();
+  CONFIG.questions=dedup;LINKS={};Object.assign(LINKS,links);
+  ROLEHELP={};Object.assign(ROLEHELP,roleHelp);
+  answers={};buildRoleSelect();renderFill();renderImport();
   const nShow=dedup.filter(q=>q.showIf).length,nDis=dedup.filter(q=>q.disableIf).length,nTab=dedup.filter(q=>q.type==='table').length,nLink=Object.keys(links).length;
+  const nHelp=Object.keys(roleHelp).length,nSum=dedup.filter(q=>q.type==='table'&&q.sumCols&&q.sumCols.length).length;
   const verdict=warns.length
     ?`<div class="warnbox"><b>驗證發現 ${warns.length} 個問題</b>（已套用可用部分，建議回 Excel 修正後重新匯入）：<br>${warns.map(w=>'・'+escapeHtml(w)).join('<br>')}</div>`
     :`<div class="okbox"><b>驗證通過</b>——未發現重複題號、斷鏈連動、無效連動值或表格缺漏。</div>`;
@@ -415,16 +453,24 @@ function applyImport(objs){
      讀取到的連動與功能：<br>
      ・顯示連動 <b>${nShow}</b> 個<br>
      ・禁填連動 <b>${nDis}</b> 個<br>
-     ・表格題 <b>${nTab}</b> 個<br>
-     ・超連結說明 <b>${nLink}</b> 個
+     ・表格題 <b>${nTab}</b> 個（含自動加總 ${nSum} 個）<br>
+     ・超連結說明 <b>${nLink}</b> 個<br>
+     ・區塊說明 <b>${nHelp}</b> 個
      ${verdict}
      <br>可在下方「目前問卷內容」表格逐列核對，或切至「填寫問卷」實際操作。整套只是換一份 Excel，程式完全沒動。`);
 }
 function renderImport(){
-  let h=`<table class="xls"><tr><th>題號</th><th>職位</th><th>分類</th><th>題目</th><th>選項</th><th>連動規則</th></tr>`;
+  let h='';
+  if(Object.keys(ROLEHELP).length){
+    h+=`<table class="xls" style="margin-bottom:12px"><tr><th>職位（區塊）</th><th>區塊說明（填寫端「?」顯示的內容）</th></tr>`;
+    Object.entries(ROLEHELP).forEach(([r,t])=>{h+=`<tr><td>${escapeHtml(r)}</td><td>${escapeHtml(t)}</td></tr>`;});
+    h+=`</table>`;
+  }
+  h+=`<table class="xls"><tr><th>題號</th><th>職位</th><th>分類</th><th>題目</th><th>選項</th><th>連動規則</th></tr>`;
   CONFIG.questions.forEach(q=>{
     let cond='—';
-    if(q.type==='table')cond=`表格：首格「${q.stopValues.join('／')}」→鎖定後續`;
+    if(q.type==='table'){cond=`表格：首格「${q.stopValues.join('／')}」→鎖定後續`;
+      if(q.sumCols&&q.sumCols.length)cond+=`　·　加總：${q.sumCols.join('／')}`;}
     else if(q.showIf)cond=`顯示：${q.showIf.q} ＝ ${q.showIf.eq!==undefined?q.showIf.eq:(q.showIf.in||[]).join('／')}`;
     else if(q.disableIf)cond=`禁填：${q.disableIf.q} ＝ ${q.disableIf.eq}`;
     const opts=q.type==='table'?'（表格欄位）':(q.options||[]).join('｜');
@@ -555,15 +601,16 @@ function exportAllCSV(){
 /* ===== 下載 Excel 範本 ===== */
 function downloadTemplate(){
   const rows=[
-   ["題號","題型","職位","分類","題目","選項","連動類型","連動題號","連動值","超連結詞","超連結說明","表格列","停止欄","停止值"],
-   ["Q1","單選","環境主管","碳管理","是否已完成溫室氣體盤查？","是｜否｜進行中","無","","","溫室氣體盤查","依 ISO 14064 系統性清點組織的溫室氣體排放。","","",""],
-   ["Q2","單選","環境主管","碳管理","盤查範疇涵蓋至第幾類？","範疇一｜範疇一、二｜範疇一、二、三","顯示","Q1","是","","","","",""],
-   ["Q3","單選","環境主管","能源","是否已設定再生能源目標年？","是｜否","禁填","Q1","否","","","","",""],
-   ["Q4","表格","環境主管","資源使用","各廠區資源使用（停業廠區首格填否）","是否營運中:select:是/否｜年用電度:num｜年用水噸:num","","","","","","台中廠｜台南廠","是否營運中","否"],
+   ["題號","題型","職位","分類","題目","選項","連動類型","連動題號","連動值","超連結詞","超連結說明","表格列","停止欄","停止值","加總欄"],
+   ["","職位說明","環境主管","","環境構面：評估公司於氣候、能源、水與廢棄物的環境作為。由環境主管填答。","","","","","","","","","",""],
+   ["Q1","單選","環境主管","碳管理","是否已完成溫室氣體盤查？","是｜否｜進行中","無","","","溫室氣體盤查","依 ISO 14064 系統性清點組織的溫室氣體排放。","","","",""],
+   ["Q2","單選","環境主管","碳管理","盤查範疇涵蓋至第幾類？","範疇一｜範疇一、二｜範疇一、二、三","顯示","Q1","是","","","","","",""],
+   ["Q3","單選","環境主管","能源","是否已設定再生能源目標年？","是｜否","禁填","Q1","否","","","","","",""],
+   ["Q4","表格","環境主管","資源使用","各廠區資源使用（停業廠區首格填否，數字欄自動加總）","是否營運中:select:是/否｜年用電度:num｜年用水噸:num","","","","","","台中廠｜台南廠","是否營運中","否","年用電度/年用水噸"],
   ];
   const csv="﻿"+rows.map(r=>r.map(c=>`"${(''+c).replace(/"/g,'""')}"`).join(",")).join("\n");
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=`問卷設定範本.csv`;a.click();
-  modal("範本已下載",`用 Excel 開啟「問卷設定範本.csv」，照欄位規則增修題目後存檔，回到此頁匯入即可。範本內含四種示範：一般單選、顯示連動、禁填連動、Excel 式表格（含鎖定）。`);
+  modal("範本已下載",`用 Excel 開啟「問卷設定範本.csv」，照欄位規則增修題目後存檔，回到此頁匯入即可。範本內含示範：區塊說明、一般單選、顯示連動、禁填連動、Excel 式表格（含鎖定與自動加總）。`);
 }
 
 loadState();
