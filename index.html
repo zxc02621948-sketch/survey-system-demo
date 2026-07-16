@@ -69,7 +69,10 @@
   .warnbox{border:1px solid #d9c08f;background:#fdf8ec;color:#7a5c1e;font-size:13.5px;padding:12px 14px;margin-top:12px;line-height:1.7}
   .okbox{border:1px solid #b9d4c6;background:#f0f7f3;color:var(--accent-ink);font-size:13.5px;padding:12px 14px;margin-top:12px}
   .misslist{border:1px solid var(--line2);background:#fbfbf9;font-size:13.5px;padding:10px 14px;margin-top:8px;line-height:1.9;max-height:260px;overflow:auto}
-  code.url{font-family:Consolas,monospace;font-size:12.5px;color:var(--accent-ink);background:#f0f4f1;padding:2px 7px}
+  code.url{font-family:Consolas,monospace;font-size:12.5px;color:var(--accent-ink);background:#f0f4f1;padding:2px 7px;word-break:break-all}
+  .linkbanner{border:1px solid var(--accent);background:#f0f7f3;color:var(--accent-ink);padding:12px 16px;margin-bottom:14px;font-size:14.5px}
+  .resetlink{color:var(--faint);text-decoration:underline;cursor:pointer;margin-left:12px}
+  .resetlink:hover{color:var(--danger)}
   .filebox{border:1.5px dashed var(--line);padding:18px;text-align:center;background:#fbfbf9}
   .filebox input{font-size:14px}
   table.xls{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
@@ -111,7 +114,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="demo-note">概念原型　題目與資料皆為模擬，用以驗證系統可行性</div>
+  <div class="demo-note">概念原型　題目與資料皆為模擬，用以驗證系統可行性（資料僅存於此瀏覽器，無伺服器）<span class="resetlink" onclick="resetDemo()">重置示範資料</span></div>
   <div class="kicker">問卷系統</div>
   <h1>企業問卷 — 完整系統原型</h1>
   <p class="lede">單一份設定檔（以 Excel／CSV 維護）貫穿全系統：填寫端（引導式體驗、多型連動、表格題、必填驗證、說明超連結）、Excel 匯入（換一份檔案即換整份問卷，匯入時自動驗證防呆）、資料端（多公司分別歸檔、依職位與分類自動整合、可匯出）、一次性填寫連結（免帳號、送出即失效）。</p>
@@ -124,6 +127,7 @@
   </div>
 
   <div id="view-fill">
+    <div id="linkBanner" class="linkbanner hidden"></div>
     <div class="panel">
       <div class="row">
         <div class="field"><label class="lbl">受評公司 <span class="hint">每家獨立歸檔</span></label><select id="coSel"></select></div>
@@ -181,7 +185,7 @@
   <div id="view-links" class="hidden">
     <div class="panel">
       <div class="sec-t">一次性填寫連結</div>
-      <div class="sec-d">為每位填答人產生專屬連結：連結綁定「公司＋職位」，開啟即進入對應題組，送出後即失效。填答人全程不需註冊帳號——直接解決以帳號控管所帶來的授權費用與管理負擔。</div>
+      <div class="sec-d">為每位填答人產生專屬連結：連結綁定「公司＋職位」，開啟即進入對應題組，送出後即失效。填答人全程不需註冊帳號——直接解決以帳號控管所帶來的授權費用與管理負擔。產生後可直接點「開啟」實際體驗整個流程（原型無伺服器，連結僅在同一瀏覽器有效；正式系統由伺服器簽發驗證，任何裝置皆可開啟）。</div>
       <div class="row">
         <div class="field"><label class="lbl">公司</label><select id="linkCo"></select></div>
         <div class="field"><label class="lbl">職位</label><select id="linkRole"></select></div>
@@ -323,10 +327,14 @@ function submitForm(){
       const parts=q.columns.map(c=>c.label+'：'+(r[c.key]!==undefined?r[c.key]:'—'));records.push({q_id:q.id,category:q.category,answer:rw+'〔'+parts.join('，')+'〕'});}});return;}
     if(answers[q.id]!==undefined)records.push({q_id:q.id,category:q.category,answer:answers[q.id]});});
   SUBMISSIONS=SUBMISSIONS.filter(s=>!(s.company_id===co&&s.role===role));
-  SUBMISSIONS.push({company_id:co,role,records});answers={};renderFill();
+  SUBMISSIONS.push({company_id:co,role,records});answers={};
   /* 對應的一次性連結即刻失效 */
   let linkClosed=false;
   ISSUED.forEach(l=>{if(l.co===co&&l.role===role&&!l.used){l.used=true;linkClosed=true;}});
+  saveState();
+  if(LINKMODE){LINKMODE=null;document.getElementById('coSel').disabled=false;document.getElementById('role').disabled=false;
+    document.getElementById('linkBanner').classList.add('hidden');history.replaceState(null,'',location.pathname);}
+  renderFill();
   const coName=COMPANIES.find(c=>c.id===co).name;
   modal("已送出並自動歸檔",`這份「${escapeHtml(role)}」填答已通過必填驗證，存入 <b>${coName}</b> 的資料夾，並依分類整合完成。切換至「資料整合／匯出」分頁即可看到——<b>全程無人工提取</b>。${linkClosed?'<br><br>此填答對應的一次性連結<b>已自動失效</b>（見「一次性填寫連結」分頁）。':''}`);
 }
@@ -493,6 +501,13 @@ let ISSUED=[
  {co:"CO-0142",role:"環境部門主管",token:"k3f9q2x8w1",used:true},
  {co:"CO-0315",role:"環境部門主管",token:"m7d2p5r9t4",used:false},
 ];
+let LINKMODE=null;
+/* 資料持久化（localStorage）：重新整理不遺失；僅存於此瀏覽器 */
+function saveState(){try{localStorage.setItem('sqdemo',JSON.stringify({sub:SUBMISSIONS,iss:ISSUED}))}catch(e){}}
+function loadState(){try{const s=JSON.parse(localStorage.getItem('sqdemo')||'null');
+  if(s){if(Array.isArray(s.sub))SUBMISSIONS=s.sub;if(Array.isArray(s.iss))ISSUED=s.iss;}}catch(e){}}
+function resetDemo(){localStorage.removeItem('sqdemo');location.href=location.pathname;}
+function demoUrl(t){return location.origin+location.pathname+'?f='+t;}
 function linkRoleOptions(){
   document.getElementById('linkCo').innerHTML=COMPANIES.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   document.getElementById('linkRole').innerHTML=roles().map(r=>`<option>${escapeHtml(r)}</option>`).join('');
@@ -501,7 +516,7 @@ function issueLink(){
   const co=document.getElementById('linkCo').value,role=document.getElementById('linkRole').value;
   if(ISSUED.find(l=>l.co===co&&l.role===role&&!l.used)){modal("已有未使用的連結",`${COMPANIES.find(c=>c.id===co).name}／${escapeHtml(role)} 已有一條未使用的連結——同一填答人同時只會有一條有效連結，避免重複填寫。`);return;}
   const token=Math.random().toString(36).slice(2,12);
-  ISSUED.push({co,role,token,used:false});renderLinks();
+  ISSUED.push({co,role,token,used:false});saveState();renderLinks();
 }
 function renderLinks(){
   if(!ISSUED.length){document.getElementById('linklist').innerHTML='<div class="footnote">尚未產生任何連結</div>';return;}
@@ -509,16 +524,16 @@ function renderLinks(){
   ISSUED.forEach((l,i)=>{
     const co=COMPANIES.find(c=>c.id===l.co);
     h+=`<tr><td>${co?co.name:l.co}</td><td>${escapeHtml(l.role)}</td>
-      <td><code class="url">https://survey.example.com/f/${l.token}</code></td>
+      <td><code class="url">${demoUrl(l.token)}</code></td>
       <td><span class="badge ${l.used?'done':'pend'}">${l.used?'已完成 · 連結失效':'未使用'}</span></td>
-      <td>${l.used?'':`<button class="btn ghost sm" onclick="copyLink(${i})">複製</button>`}</td></tr>`;
+      <td>${l.used?'':`<a class="btn sm" style="text-decoration:none;margin-right:6px" href="${demoUrl(l.token)}" target="_blank">開啟</a><button class="btn ghost sm" onclick="copyLink(${i})">複製</button>`}</td></tr>`;
   });
   h+='</table>';
   document.getElementById('linklist').innerHTML=h;
 }
 function copyLink(i){
-  const url='https://survey.example.com/f/'+ISSUED[i].token;
-  try{navigator.clipboard.writeText(url);modal("已複製連結",`<code class="url">${url}</code><br><br>實際系統中，這條連結以 Email 或訊息寄給填答人；開啟即進入對應公司與職位的題組，送出後連結作廢。`);}
+  const url=demoUrl(ISSUED[i].token);
+  try{navigator.clipboard.writeText(url);modal("已複製連結",`<code class="url">${url}</code><br><br>在<b>同一個瀏覽器</b>開啟此連結即進入專屬填答模式（公司與職位自動鎖定，送出後連結作廢）。實際系統中連結由伺服器簽發驗證，以 Email 或訊息寄給填答人、任何裝置皆可開啟。`);}
   catch(e){modal("連結",`<code class="url">${url}</code>`);}
 }
 /* ===== 匯出全部公司 ===== */
@@ -544,8 +559,30 @@ function downloadTemplate(){
   modal("範本已下載",`用 Excel 開啟「問卷設定範本.csv」，照欄位規則增修題目後存檔，回到此頁匯入即可。範本內含四種示範：一般單選、顯示連動、禁填連動、Excel 式表格（含鎖定）。`);
 }
 
+loadState();
 document.getElementById('coSel').innerHTML=COMPANIES.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
 buildRoleSelect();renderFill();
+/* 一次性連結開啟（?f=token） */
+(function(){
+  const tok=new URLSearchParams(location.search).get('f');
+  if(!tok)return;
+  const l=ISSUED.find(x=>x.token===tok);
+  if(!l){modal("連結無法驗證",
+    `此為概念原型：連結資料僅存於「簽發連結的那個瀏覽器」，你目前以其他裝置或瀏覽器開啟，原型沒有伺服器可查驗這條連結。<br><br><b>正式系統</b>中連結由伺服器簽發與驗證，任何裝置皆可直接開啟填答。<br><br>已為你切換為一般示範模式。`);return;}
+  if(l.used){modal("連結已失效",
+    `這條專屬連結已完成填答並自動作廢。一次性連結防止重複填寫、免帳號控管的機制，正是如此運作。`);return;}
+  const co=COMPANIES.find(c=>c.id===l.co);
+  if(!co||!roles().includes(l.role)){modal("連結對應資料不存在","此連結對應的公司或職位不在目前的問卷設定中。");return;}
+  LINKMODE=l;
+  document.getElementById('coSel').value=l.co;
+  document.getElementById('role').value=l.role;
+  document.getElementById('coSel').disabled=true;
+  document.getElementById('role').disabled=true;
+  const b=document.getElementById('linkBanner');
+  b.classList.remove('hidden');
+  b.innerHTML=`以<b>專屬一次性連結</b>進入：${co.name}　·　${escapeHtml(l.role)}（公司與職位已自動鎖定，送出後此連結即失效）`;
+  renderFill();
+})();
 </script>
 </body>
 </html>
