@@ -114,7 +114,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="demo-note">概念原型　題目與資料皆為模擬，用以驗證系統可行性（資料僅存於此瀏覽器，無伺服器）<span class="resetlink" onclick="resetDemo()">重置示範資料</span></div>
+  <div class="demo-note">概念原型　題目與資料皆為模擬，用以驗證系統可行性（資料僅存於此瀏覽器，無伺服器）<span class="resetlink" id="resetLink" onclick="resetDemo()">重置示範資料</span></div>
   <div class="kicker">問卷系統</div>
   <h1>企業問卷 — 完整系統原型</h1>
   <p class="lede">單一份設定檔（以 Excel／CSV 維護）貫穿全系統：填寫端（引導式體驗、多型連動、表格題、必填驗證、說明超連結）、Excel 匯入（換一份檔案即換整份問卷，匯入時自動驗證防呆）、資料端（多公司分別歸檔、依職位與分類自動整合、可匯出）、一次性填寫連結（免帳號、送出即失效）。</p>
@@ -251,7 +251,13 @@ function buildRoleSelect(){const sel=document.getElementById('role');const cur=s
   if(roles().includes(cur))sel.value=cur;}
 function currentRole(){return document.getElementById('role').value;}
 
-function tab(name){['fill','edit','data','links'].forEach(n=>{document.getElementById('view-'+n).classList.toggle('hidden',n!==name);document.getElementById('t-'+n).classList.toggle('on',n===name);});if(name==='edit')renderImport();if(name==='data'){renderTree();renderExtract();}if(name==='links'){linkRoleOptions();renderLinks();}}
+function tab(name){if(LINKMODE&&name!=='fill')return; /* 連結模式:僅能填寫 */
+ ['fill','edit','data','links'].forEach(n=>{document.getElementById('view-'+n).classList.toggle('hidden',n!==name);document.getElementById('t-'+n).classList.toggle('on',n===name);});if(name==='edit')renderImport();if(name==='data'){renderTree();renderExtract();}if(name==='links'){linkRoleOptions();renderLinks();}}
+function setLinkModeUI(on){ /* 連結模式:隱藏管理端分頁與重置,只留填寫 */
+ ['t-edit','t-data','t-links'].forEach(id=>document.getElementById(id).classList.toggle('hidden',on));
+ const r=document.getElementById('resetLink');if(r)r.classList.toggle('hidden',on);
+ if(on)tabForce('fill');}
+function tabForce(name){['fill','edit','data','links'].forEach(n=>{document.getElementById('view-'+n).classList.toggle('hidden',n!==name);document.getElementById('t-'+n).classList.toggle('on',n===name);});}
 
 function isDisabled(q){return q.disableIf&&answers[q.disableIf.q]===q.disableIf.eq;}
 function visibleQuestions(){const role=currentRole();return CONFIG.questions.filter(q=>{
@@ -333,7 +339,8 @@ function submitForm(){
   ISSUED.forEach(l=>{if(l.co===co&&l.role===role&&!l.used){l.used=true;linkClosed=true;}});
   saveState();
   if(LINKMODE){LINKMODE=null;document.getElementById('coSel').disabled=false;document.getElementById('role').disabled=false;
-    document.getElementById('linkBanner').classList.add('hidden');history.replaceState(null,'',location.pathname);}
+    document.getElementById('linkBanner').classList.add('hidden');history.replaceState(null,'',location.pathname);
+    setLinkModeUI(false);}
   renderFill();
   const coName=COMPANIES.find(c=>c.id===co).name;
   modal("已送出並自動歸檔",`這份「${escapeHtml(role)}」填答已通過必填驗證，存入 <b>${coName}</b> 的資料夾，並依分類整合完成。切換至「資料整合／匯出」分頁即可看到——<b>全程無人工提取</b>。${linkClosed?'<br><br>此填答對應的一次性連結<b>已自動失效</b>（見「一次性填寫連結」分頁）。':''}`);
@@ -581,6 +588,7 @@ buildRoleSelect();renderFill();
   const b=document.getElementById('linkBanner');
   b.classList.remove('hidden');
   b.innerHTML=`以<b>專屬一次性連結</b>進入：${co.name}　·　${escapeHtml(l.role)}（公司與職位已自動鎖定，送出後此連結即失效）`;
+  setLinkModeUI(true);
   renderFill();
 })();
 </script>
