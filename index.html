@@ -185,8 +185,8 @@
 <div class="wrap">
   <div class="demo-note">概念原型　題目與資料皆為模擬，用以驗證系統可行性（資料僅存於此瀏覽器，無伺服器）<span class="resetlink" id="resetLink" onclick="resetDemo()">重置示範資料</span></div>
   <div class="kicker">問卷系統</div>
-  <h1>企業問卷 — 完整系統原型</h1>
-  <p class="lede">填寫端（引導式體驗、多型連動、表格題、必填驗證、說明超連結）＋管理端（問卷管理：自行建立、編輯、預覽、發布；Excel 批次匯入含驗證防呆）＋資料端（多公司分別歸檔、依職位與分類自動整合、條件提取、匯出）＋一次性填寫連結（免帳號、送出即失效）。</p>
+  <h1>企業問卷系統（概念原型）</h1>
+  <p class="lede">以可實際操作的方式，示範引導式填答、問卷管理（建立、編輯、預覽、發布）、Excel 批次匯入、資料整合與一次性填寫連結的操作概念。細部功能與範圍以規格確認為準。</p>
   <div class="rule"></div>
   <div class="tabs">
     <div class="tab on" id="t-fill" onclick="tab('fill')">填寫問卷</div>
@@ -200,7 +200,7 @@
     <div id="linkBanner" class="linkbanner hidden"></div>
     <div class="panel">
       <div class="row">
-        <div class="field"><label class="lbl">受評公司 <span class="hint">每家獨立歸檔</span></label><select id="coSel"></select></div>
+        <div class="field"><label class="lbl">受評公司 <span class="hint">每家獨立歸檔</span></label><select id="coSel" onchange="renderFill()"></select></div>
         <div class="field"><label class="lbl">填答人職位 <span class="hint">不同職位對應不同題目</span></label><select id="role" onchange="fillRoleChanged()"></select></div>
       </div>
     </div>
@@ -304,7 +304,7 @@
     </div>
     <div class="panel">
       <div class="sec-t">自訂提取</div>
-      <div class="sec-d">依條件撈出需要的資料，可單獨匯出——會計端要什麼撈什麼，不再人工翻表整理。</div>
+      <div class="sec-d">依公司、職位、分類或關鍵字篩選資料，篩選結果可單獨匯出。</div>
       <div class="row">
         <div class="field"><label class="lbl">公司</label><select id="exCo" onchange="applyExtract()"></select></div>
         <div class="field"><label class="lbl">職位</label><select id="exRole" onchange="applyExtract()"></select></div>
@@ -318,14 +318,14 @@
   <div id="view-links" class="hidden">
     <div class="panel">
       <div class="sec-t">一次性填寫連結</div>
-      <div class="sec-d">為每位填答人產生專屬連結：連結綁定「公司＋職位」，開啟即進入對應題組，送出後即失效。填答人全程不需註冊帳號——直接解決以帳號控管所帶來的授權費用與管理負擔。產生後可直接點「開啟」實際體驗整個流程（原型無伺服器，連結僅在同一瀏覽器有效；正式系統由伺服器簽發驗證，任何裝置皆可開啟）。</div>
+      <div class="sec-d">為每位填答人產生專屬連結：連結綁定「公司＋職位」，開啟即進入對應題組，送出後即失效，填答人不需註冊帳號。產生後可點「開啟」體驗流程（原型無伺服器，連結僅在同一瀏覽器有效；正式版規劃由伺服器簽發與驗證）。</div>
       <div class="row">
         <div class="field"><label class="lbl">公司</label><select id="linkCo"></select></div>
         <div class="field"><label class="lbl">職位</label><select id="linkRole"></select></div>
         <div class="field" style="flex:none;align-self:flex-end"><button class="btn" onclick="issueLink()">產生連結</button></div>
       </div>
       <div id="linklist" style="margin-top:18px"></div>
-      <div class="footnote">概念展示：實際系統中連結由伺服器簽發與驗證，開啟時自動對應公司與職位、送出後作廢，無法轉用或重複填寫。</div>
+      <div class="footnote">概念展示：正式版規劃由伺服器簽發與驗證連結，開啟時對應公司與職位、送出後作廢。</div>
     </div>
   </div>
 </div>
@@ -377,7 +377,9 @@ let SUBMISSIONS=[
  {company_id:"CO-0207",role:"財務／治理主管",records:[{q_id:"G1",category:"董事會",answer:"高於下限"},{q_id:"G7",category:"資訊揭露",answer:"是"}]},
 ];
 let answers={};
-let FILLSTAGE=0; /* 填寫端目前階段（階段＝該職位題目的分類，依出現順序） */
+let FILLSTAGE=0; /* 填寫端目前階段（階段＝可見題目的分類，依出現順序） */
+let FILLCAT=null; /* 目前階段的分類名：連動使階段清單增減時，以名稱鎖定所在階段不跳位 */
+let FDRAFTS={},FILLKEY=null; /* 填答草稿依「公司＋職位」分格保存，切換不互相覆蓋 */
 /* 區塊說明（職位 → 說明文字）：可由 Excel「職位說明」列匯入自訂 */
 let ROLEHELP={
  "環境部門主管":"環境構面：評估公司於氣候風險、能源、資源使用與供應鏈的環境作為。由環境部門主管填答。",
@@ -418,7 +420,7 @@ function linkify(q){if(!q.link)return escapeHtml(q.text);const t=escapeHtml(q.te
   return t.replace(term,`<span class="qlink" onclick="drawer('${q.link.replace(/'/g,"")}',LINKS['${q.link.replace(/'/g,"")}']||'')">${term}</span>`);}
 
 /* 階段清單＝該職位題目的分類（依出現順序），純資料驅動——任何匯入或後台建立的問卷自動成立 */
-function fillStages(role){const s=[];CONFIG.questions.forEach(q=>{if(q.role===role&&!s.includes(q.category))s.push(q.category);});return s;}
+function fillStages(role){const s=[];calcVisible(CONFIG.questions,role,answers).forEach(q=>{if(!s.includes(q.category))s.push(q.category);});return s;}
 /* 某組可見題目中「會擋送出」的必填缺漏數（與 submitForm 同一套規則） */
 function stageBlockMissing(qs){let n=0;qs.forEach(q=>{if(isDisabled(q))return;
   if(q.type==='table'){const A=answers[q.id]||{};q.rows.forEach((rw,ri)=>{const r=A[ri];
@@ -427,20 +429,37 @@ function stageBlockMissing(qs){let n=0;qs.forEach(q=>{if(isDisabled(q))return;
     q.columns.forEach(c=>{if(c.key!==q.stopCol&&r[c.key]===undefined)n++;});});return;}
   if(!q.optional&&answers[q.id]===undefined)n++;});return n;}
 function fillGo(d){const n=fillStages(currentRole()).length;
-  FILLSTAGE=Math.min(Math.max(0,FILLSTAGE+d),Math.max(0,n-1));renderFill();
+  FILLSTAGE=Math.min(Math.max(0,FILLSTAGE+d),Math.max(0,n-1));FILLCAT=null;renderFill();
   try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}}
-function fillJump(i){FILLSTAGE=i;renderFill();}
-function fillRoleChanged(){FILLSTAGE=0;renderFill();}
+function fillJump(i){FILLSTAGE=i;FILLCAT=null;renderFill();}
+function fillRoleChanged(){renderFill();} /* 各職位草稿分格保存，切換即載入該職位自己的進度 */
 function qHelp(qid){const q=CONFIG.questions.find(x=>x.id===qid);if(q&&q.link)drawer(q.link,LINKS[q.link]||'');}
 
 function renderFill(){
-  const role=currentRole(),visAll=visibleQuestions();
+  const role=currentRole();
+  /* 草稿依「公司＋職位」分格：切換時先存回舊格、再載入新格 */
+  const key=document.getElementById('coSel').value+'｜'+role;
+  if(key!==FILLKEY){
+    if(FILLKEY!==null)FDRAFTS[FILLKEY]={ans:answers,fst:FILLSTAGE,fct:FILLCAT};
+    const d=FDRAFTS[key];
+    answers=(d&&d.ans)?d.ans:{};FILLSTAGE=d?(d.fst||0):0;FILLCAT=d?(d.fct||null):null;
+    FILLKEY=key;
+  }
+  const visAll=visibleQuestions();
   Object.keys(answers).forEach(id=>{const q=CONFIG.questions.find(x=>x.id===id);
     if(!q){delete answers[id];return;}
     if(q.role===role && !visAll.find(v=>v.id===id))delete answers[id];});
+  /* 階段僅含「目前可見」題目的分類：被連動整段隱藏的分類不會出現空白階段 */
   const stages=fillStages(role);
-  if(stages.length&&FILLSTAGE>=stages.length)FILLSTAGE=stages.length-1; /* 空清單(如切換瞬間)不夾擠,保留草稿階段 */
-  const cat=stages[FILLSTAGE]||'',vis=visAll.filter(q=>q.category===cat);
+  if(!stages.length){
+    document.getElementById('fillSide').innerHTML='';
+    document.getElementById('form').innerHTML='<div class="panel"><div class="footnote">此職位目前沒有可填寫的題目。</div></div>';
+    FDRAFTS[FILLKEY]={ans:answers,fst:0,fct:null};saveState();return;
+  }
+  if(FILLCAT&&stages.includes(FILLCAT))FILLSTAGE=stages.indexOf(FILLCAT);
+  else if(FILLSTAGE>=stages.length)FILLSTAGE=stages.length-1;
+  const cat=stages[FILLSTAGE],vis=visAll.filter(q=>q.category===cat);
+  FILLCAT=cat;
   /* ── 左側：階段進度 ── */
   const doneArr=stages.map(c=>{const qs=visAll.filter(q=>q.category===c);
     if(!qs.length)return false;
@@ -510,7 +529,8 @@ function renderFill(){
     ${last?`<button class="btn" onclick="submitForm()">送出問卷</button>`:`<button class="btn" onclick="fillGo(1)">儲存並繼續 →</button>`}</div>`;
   document.getElementById('form').innerHTML=html;
   document.getElementById('prog').textContent=`本階段已填 ${answered} ／ ${answerable} 項`;
-  saveState(); /* 草稿（答案＋階段）自動保留 */
+  FDRAFTS[FILLKEY]={ans:answers,fst:FILLSTAGE,fct:FILLCAT};
+  saveState(); /* 草稿（各公司＋職位的答案與階段）自動保留 */
 }
 function pick(qid,val){answers[qid]=val;renderFill();}
 function renderTable(q){
@@ -572,7 +592,7 @@ function submitForm(){
       const parts=q.columns.map(c=>c.label+'：'+(r[c.key]!==undefined?r[c.key]:'—'));records.push({q_id:q.id,category:q.category,answer:rw+'〔'+parts.join('，')+'〕'});}});return;}
     if(answers[q.id]!==undefined)records.push({q_id:q.id,category:q.category,answer:answers[q.id]});});
   SUBMISSIONS=SUBMISSIONS.filter(s=>!(s.company_id===co&&s.role===role));
-  SUBMISSIONS.push({company_id:co,role,records});answers={};FILLSTAGE=0;
+  SUBMISSIONS.push({company_id:co,role,records});answers={};FILLSTAGE=0;FILLCAT=null;
   /* 對應的一次性連結即刻失效 */
   let linkClosed=false;
   ISSUED.forEach(l=>{if(l.co===co&&l.role===role&&!l.used){l.used=true;linkClosed=true;}});
@@ -582,7 +602,7 @@ function submitForm(){
     setLinkModeUI(false);}
   renderFill();
   const coName=COMPANIES.find(c=>c.id===co).name;
-  modal("已送出並自動歸檔",`這份「${escapeHtml(role)}」填答已通過必填驗證，存入 <b>${coName}</b> 的資料夾，並依分類整合完成。切換至「資料整合／匯出」分頁即可看到——<b>全程無人工提取</b>。${linkClosed?'<br><br>此填答對應的一次性連結<b>已自動失效</b>（見「一次性填寫連結」分頁）。':''}`);
+  modal("已送出並自動歸檔",`這份「${escapeHtml(role)}」填答已通過必填驗證，存入 <b>${coName}</b> 的資料夾，並依分類整合完成，無需人工另行整理。切換至「資料整合／匯出」分頁即可看到。${linkClosed?'<br><br>此填答對應的一次性連結<b>已自動失效</b>（見「一次性填寫連結」分頁）。':''}`);
 }
 
 /* ===== Excel(CSV)匯入 ===== */
@@ -772,12 +792,11 @@ let ISSUED=[
 ];
 let LINKMODE=null;
 /* 資料持久化（localStorage）：重新整理不遺失；僅存於此瀏覽器 */
-function saveState(){try{localStorage.setItem('sqdemo',JSON.stringify({sub:SUBMISSIONS,iss:ISSUED,drafts:DRAFTS,pub:publishedId,ans:answers,fst:FILLSTAGE}))}catch(e){}}
+function saveState(){try{localStorage.setItem('sqdemo',JSON.stringify({sub:SUBMISSIONS,iss:ISSUED,drafts:DRAFTS,pub:publishedId,fdr:FDRAFTS}))}catch(e){}}
 function loadState(){try{const s=JSON.parse(localStorage.getItem('sqdemo')||'null');
   if(s){if(Array.isArray(s.sub))SUBMISSIONS=s.sub;if(Array.isArray(s.iss))ISSUED=s.iss;
     if(Array.isArray(s.drafts))DRAFTS=s.drafts;
-    if(s.ans&&typeof s.ans==='object')answers=s.ans;
-    if(typeof s.fst==='number')FILLSTAGE=s.fst;
+    if(s.fdr&&typeof s.fdr==='object')FDRAFTS=s.fdr;
     if(s.pub){publishedId=s.pub;const d=DRAFTS.find(x=>x.id===publishedId);
       if(d){CONFIG.questions=deep(d.questions);ROLEHELP=deep(d.roleHelp||{});LINKS=deep(d.links||{});}}}}catch(e){}}
 function resetDemo(){localStorage.removeItem('sqdemo');location.href=location.pathname;}
@@ -807,7 +826,7 @@ function renderLinks(){
 }
 function copyLink(i){
   const url=demoUrl(ISSUED[i].token);
-  try{navigator.clipboard.writeText(url);modal("已複製連結",`<code class="url">${url}</code><br><br>在<b>同一個瀏覽器</b>開啟此連結即進入專屬填答模式（公司與職位自動鎖定，送出後連結作廢）。實際系統中連結由伺服器簽發驗證，以 Email 或訊息寄給填答人、任何裝置皆可開啟。`);}
+  try{navigator.clipboard.writeText(url);modal("已複製連結",`<code class="url">${url}</code><br><br>在<b>同一個瀏覽器</b>開啟此連結即進入專屬填答模式（公司與職位自動鎖定，送出後連結作廢）。正式版規劃由伺服器簽發連結，以 Email 或訊息寄給填答人。`);}
   catch(e){modal("連結",`<code class="url">${url}</code>`);}
 }
 /* ===== 匯出全部公司 ===== */
@@ -1037,7 +1056,7 @@ buildRoleSelect();renderFill();
   if(!tok)return;
   const l=ISSUED.find(x=>x.token===tok);
   if(!l){modal("連結無法驗證",
-    `此為概念原型：連結資料僅存於「簽發連結的那個瀏覽器」，你目前以其他裝置或瀏覽器開啟，原型沒有伺服器可查驗這條連結。<br><br><b>正式系統</b>中連結由伺服器簽發與驗證，任何裝置皆可直接開啟填答。<br><br>已為你切換為一般示範模式。`);return;}
+    `此為概念原型：連結資料僅存於「簽發連結的那個瀏覽器」，你目前以其他裝置或瀏覽器開啟，原型沒有伺服器可查驗這條連結。<br><br><b>正式版規劃</b>由伺服器簽發與驗證連結，即可跨裝置開啟填答。<br><br>已為你切換為一般示範模式。`);return;}
   if(l.used){modal("連結已失效",
     `這條專屬連結已完成填答並自動作廢。一次性連結防止重複填寫、免帳號控管的機制，正是如此運作。`);return;}
   const co=COMPANIES.find(c=>c.id===l.co);
